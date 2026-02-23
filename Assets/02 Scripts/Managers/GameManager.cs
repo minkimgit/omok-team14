@@ -26,7 +26,7 @@ public class GameManager : Singleton<GameManager>
     }
 
     // Game O/X UI 업데이트
-    public void SetGameTurn(Constants.PlayerType playerTurnType)
+    public void SetGameTurn(PlayerType playerTurnType)
     {
         _gameSceneController.SetPlayerTurnPanel(playerTurnType);
     }
