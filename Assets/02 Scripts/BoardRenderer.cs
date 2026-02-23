@@ -1,4 +1,5 @@
 using System;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using static Constants;
@@ -9,6 +10,9 @@ public class BoardRenderer : MonoBehaviour
     [Header("Stone Prefabs")]
     [SerializeField] private GameObject blackStonePrefab;
     [SerializeField] private GameObject whiteStonePrefab;
+
+    [Header("Hover Indicator")]
+    [SerializeField] private GameObject hoverIndicatorPrefab;
 
     [Header("Board Settings")]
     [SerializeField] private Camera gameCamera;
@@ -21,6 +25,7 @@ public class BoardRenderer : MonoBehaviour
     private SpriteRenderer _spriteRenderer;
     private float _cellWidth;
     private float _cellHeight;
+    private GameObject _hoverIndicator;
 
     // 놓인 돌 오브젝트 추적
     private GameObject[,] _stones;
@@ -37,6 +42,12 @@ public class BoardRenderer : MonoBehaviour
     private void Start()
     {
         CalculateCellSize();
+
+        if (hoverIndicatorPrefab != null)
+        {
+            _hoverIndicator = Instantiate(hoverIndicatorPrefab, transform);
+            _hoverIndicator.SetActive(false);
+        }
     }
 
     private void CalculateCellSize()
@@ -52,8 +63,35 @@ public class BoardRenderer : MonoBehaviour
 
     private void Update()
     {
+        HandleHover();
+
         if (Mouse.current.leftButton.wasPressedThisFrame)
             HandleClick();
+    }
+
+    private void HandleHover()
+    {
+        if (_hoverIndicator == null) return;
+
+        Vector2 mouseWorldPos = gameCamera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+        RaycastHit2D hit = Physics2D.Raycast(mouseWorldPos, Vector2.zero);
+
+        if (hit.collider == null || hit.collider.gameObject != gameObject)
+        {
+            _hoverIndicator.SetActive(false);
+            return;
+        }
+
+        (int row, int col) = WorldToGrid(hit.point);
+
+        if (_stones[row, col] != null)
+        {
+            _hoverIndicator.SetActive(false);
+            return;
+        }
+
+        _hoverIndicator.transform.position = GridToWorldPosition(row, col);
+        _hoverIndicator.SetActive(true);
     }
 
     private void HandleClick()
@@ -80,6 +118,9 @@ public class BoardRenderer : MonoBehaviour
 
         Vector3 worldPos = GridToWorldPosition(row, col);
         _stones[row, col] = Instantiate(prefab, worldPos, Quaternion.identity, transform);
+
+        _stones[row, col].transform.localScale = Vector3.zero;
+        _stones[row, col].transform.DOScale(1, .3f).SetEase(Ease.OutBack);
     }
 
     // 특정 위치의 돌 제거

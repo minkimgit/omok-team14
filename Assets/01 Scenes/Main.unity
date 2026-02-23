@@ -751,7 +751,7 @@ MonoBehaviour:
   gameMusic: {fileID: 0}
   buttonHoverSfx: {fileID: 8300000, guid: d00ef75a7abd3420fae34f4a36f060aa, type: 3}
   buttonClickSfx: {fileID: 8300000, guid: b547c6126c817487b9913914ef233500, type: 3}
-  stonePlaceSfx: {fileID: 0}
+  stonePlaceSfx: {fileID: 8300000, guid: d5f454d27e306c84c9437606047d928c, type: 3}
   winSfx: {fileID: 8300000, guid: aa7a6fa778b5f5e489f13bb11da3fd37, type: 3}
   loseSfx: {fileID: 8300000, guid: f345c301ee61f95498aa89392730763b, type: 3}
   musicVolume: 0.5

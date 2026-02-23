@@ -23,6 +23,7 @@ public class GameManager : Singleton<GameManager>
     protected override void OnSceneLoad(Scene scene, LoadSceneMode mode)
     {
         _canvas = FindFirstObjectByType<Canvas>();
+        _gameSceneController = FindFirstObjectByType<GameSceneController>();
     }
 
     // Game O/X UI 업데이트
