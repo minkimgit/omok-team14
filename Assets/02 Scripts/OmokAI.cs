@@ -78,7 +78,7 @@ public class OmokAI : MonoBehaviour
         }
     }
 
-    // 전체 보드 상태 평가
+    // 전체 보드 상태 평가 (휴리스틱)
     private int EvaluateBoard(OmokBoard board, int player)
     {
         int totalScore = 0;
