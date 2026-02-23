@@ -11,8 +11,8 @@ public class GameManager : Singleton<GameManager>
     // 캔버스
     private Canvas _canvas;
 
-    // // 게임 화면의 UI 컨트롤러
-    // private GamePanelController _gamePanelController; 
+    // 게임 화면의 UI 컨트롤러
+    private GameSceneController _gameSceneController; 
     //
     // // Game Logic
     // private GameLogic _gameLogic;
@@ -25,11 +25,11 @@ public class GameManager : Singleton<GameManager>
         _canvas = FindFirstObjectByType<Canvas>();
     }
 
-    // // Game O/X UI 업데이트
-    // public void SetGameTurn(Constants.PlayerType playerTurnType)
-    // {
-    //     _gamePanelController.SetPlayerTurnPanel(playerTurnType);
-    // }
+    // Game O/X UI 업데이트
+    public void SetGameTurn(Constants.PlayerType playerTurnType)
+    {
+        _gameSceneController.SetPlayerTurnPanel(playerTurnType);
+    }
 
     // Settings 패널 열기
     public void OpenSettingsPanel()
@@ -45,17 +45,17 @@ public class GameManager : Singleton<GameManager>
     }
 
     // // Confirm 패널 열기
-    // public void OpenConfirmPanel(string message, ConfirmPanelController.OnConfirmButtonClicked onConfirmButtonClicked)
-    // {
-    //     var confirmPanelObject = Instantiate(confirmPanelPrefab, _canvas.transform);
-    //     confirmPanelObject.GetComponent<ConfirmPanelController>().Show(message, onConfirmButtonClicked);
-    // }
+    public void OpenConfirmPanel(string message, ConfirmPanelController.OnClickConfirm onClickConfirm)
+    {
+        var confirmPanelObject = Instantiate(confirmPanelPrefab, _canvas.transform);
+        confirmPanelObject.GetComponent<ConfirmPanelController>().Show(message, onClickConfirm);
+    }
 
     // 씬 전환 (Main > Game)
     public void ChangeToGameScene(GameType gameType)
     {
         _gameType = gameType;
-        SceneManager.LoadScene(SCENE_GAME);       
+        SceneManager.LoadScene(SCENE_GAME);
     }
 
     // 씬 전환 (Game > Main)
