@@ -316,11 +316,13 @@ MonoBehaviour:
   playerBTurnImage: {fileID: 1787963481}
   playerATurnRect: {fileID: 444819598}
   playerBTurnRect: {fileID: 1787963480}
-  PlayerAWhiteStoneImage: {fileID: 1885842128}
-  PlayerBWhiteStoneImage: {fileID: 1335785213}
-  PlayerABlackStoneImage: {fileID: 858801507}
-  PlayerBBlackStoneImage: {fileID: 1695838846}
+  playerAWhiteStoneImage: {fileID: 1885842128}
+  playerBBlackStoneImage: {fileID: 1695838846}
+  playerATimerText: {fileID: 391096304}
+  playerBTimerText: {fileID: 1601630515}
   boardRenderer: {fileID: 1164801739}
+  playerATimeRemaining: 15
+  playerBTimeRemaining: 15
 --- !u!1 &228756619
 GameObject:
   m_ObjectHideFlags: 0

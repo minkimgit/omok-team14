@@ -72,6 +72,8 @@ public class BoardRenderer : MonoBehaviour
 
     private void HandleHover()
     {
+        if (EventSystem.current.IsPointerOverGameObject()) return;
+        
         if (_hoverIndicator == null) return;
 
         Vector2 mouseWorldPos = gameCamera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
@@ -99,10 +101,7 @@ public class BoardRenderer : MonoBehaviour
     {
         Vector2 mouseWorldPos = gameCamera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
         
-        if (EventSystem.current.IsPointerOverGameObject())
-        {
-            return;
-        }
+        if (EventSystem.current.IsPointerOverGameObject()) return;
 
         // 보드 콜라이더에만 반응
         RaycastHit2D hit = Physics2D.Raycast(mouseWorldPos, Vector2.zero);

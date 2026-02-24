@@ -1,4 +1,6 @@
 using DG.Tweening;
+using NUnit.Framework.Constraints;
+using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,27 +14,43 @@ public class GameSceneController : MonoBehaviour
     [SerializeField] private RectTransform playerATurnRect;
     [SerializeField] private RectTransform playerBTurnRect;
     
-    [SerializeField] private Image PlayerAWhiteStoneImage;
-    [SerializeField] private Image PlayerBBlackStoneImage;
+    [SerializeField] private Image playerAWhiteStoneImage;
+    [SerializeField] private Image playerBBlackStoneImage;
+    
+    [SerializeField] private TextMeshProUGUI playerATimerText;
+    [SerializeField] private TextMeshProUGUI playerBTimerText;
     
     [SerializeField] private BoardRenderer boardRenderer;
     
-    private string surrenderText = "게임을 기권하시겠습니까? 기권시 패배로 처리됩니다.";
-    private string victoryText = "승리하였습니다.";
-    private string defeatText = "패배하였습니다.";
+    [SerializeField] private float playerATimeRemaining = 300f;
+    [SerializeField] private float playerBTimeRemaining = 300f;
+    private bool _timerIsRunning = false;
     
-
-    private AudioManager _audioManager;
+    private string _surrenderText = "게임을 기권하시겠습니까? 기권시 패배로 처리됩니다.";
+    private string _victoryText = "승리하였습니다.";
+    private string _defeatText = "패배하였습니다.";
+    
     private BoardData _boardData;
+    private AudioManager _audioManager;
     private int _currentPlayer;  // 현재 턴인 플레이어 (1 or 2)
     private int _startingPlayer; // 이번 게임에서 흑돌(선공)을 맡은 플레이어 (1 or 2)
+    private float setPlayerATimeRemaining;
+    private float setPlayerBTimeRemaining;
 
     private void Start()
     {
+         setPlayerATimeRemaining = playerATimeRemaining;
+         setPlayerBTimeRemaining = playerBTimeRemaining;
         _audioManager = FindObjectOfType<AudioManager>();
         _boardData = new BoardData(BOARD_SIZE);
         boardRenderer.OnCellClicked += OnCellClicked;
         SetFirstPlayer();
+    }
+
+    private void LateUpdate()
+    {
+        TimerCountdown(_currentPlayer);
+        DisplayTime();
     }
 
     // 매 게임 시작 시 선공 플레이어를 무작위로 결정
@@ -43,15 +61,22 @@ public class GameSceneController : MonoBehaviour
         GameManager.Instance.SetGameTurn(
             _currentPlayer == 1 ? PlayerType.Player1 : PlayerType.Player2
         );
+
+        // 타이머 세팅
+        _timerIsRunning = true;
+        playerATimeRemaining = setPlayerATimeRemaining;
+        playerBTimeRemaining = setPlayerBTimeRemaining;
+        
+        // 턴 HUD 돌 색 설정
         if (_currentPlayer == 1)
         {
-            PlayerAWhiteStoneImage.gameObject.SetActive(false);
-            PlayerBBlackStoneImage.gameObject.SetActive(false);
+            playerAWhiteStoneImage.gameObject.SetActive(false);
+            playerBBlackStoneImage.gameObject.SetActive(false);
         }
         else
         {
-            PlayerAWhiteStoneImage.gameObject.SetActive(true);
-            PlayerBBlackStoneImage.gameObject.SetActive(true);
+            playerAWhiteStoneImage.gameObject.SetActive(true);
+            playerBBlackStoneImage.gameObject.SetActive(true);
         }
             
     }
@@ -74,12 +99,17 @@ public class GameSceneController : MonoBehaviour
         if (OmokRule.CheckWin(_boardData, col, row, PlayerToCell(_currentPlayer)))
         {
             Debug.Log($"플레이어 {_currentPlayer} 승리!");
-            _audioManager.PlayWinSfx();
+            
             OpenGameOverPanel();
             return;
         }
-
-        // 턴 교체
+        
+        ChangeTurn();
+    }
+    
+    // 턴 교체
+    private void ChangeTurn()
+    {
         _currentPlayer = (_currentPlayer == 1) ? 2 : 1;
         GameManager.Instance.SetGameTurn(
             _currentPlayer == 1 ? PlayerType.Player1 : PlayerType.Player2
@@ -94,7 +124,7 @@ public class GameSceneController : MonoBehaviour
     // 기권 팝업
     public void OnClickSurrenderButton()
     {
-        GameManager.Instance.OpenConfirmPanel(surrenderText, "네", "아니요",() =>
+        GameManager.Instance.OpenConfirmPanel(_surrenderText, "네", "아니요",() =>
         {
             GameManager.Instance.ChangeToMainScene();
         });
@@ -103,7 +133,9 @@ public class GameSceneController : MonoBehaviour
     // 게임오버 팝업
     public void OpenGameOverPanel()
     {
-        GameManager.Instance.OpenConfirmPanel(victoryText, "다시하기", "나가기", () =>
+        _timerIsRunning = false;
+        _audioManager.PlayWinSfx();
+        GameManager.Instance.OpenConfirmPanel(($"플레이어 {_currentPlayer} 승리!"), "다시하기", "나가기", () =>
         {
             ResetGame();
         },
@@ -112,7 +144,7 @@ public class GameSceneController : MonoBehaviour
             GameManager.Instance.ChangeToMainScene();
         });
     }
-
+    
     //게임 리셋
     private void ResetGame()
     {
@@ -120,6 +152,49 @@ public class GameSceneController : MonoBehaviour
         _boardData.Clear();
         SetFirstPlayer();
     }
+
+    private void TimerCountdown(int currentPlayer)
+    {
+        if (currentPlayer == 1)
+        {
+            if (playerATimeRemaining > 0 && _timerIsRunning)
+            {
+                playerATimeRemaining -= Time.deltaTime;
+            }
+            else if (playerATimeRemaining <= 0)
+            {
+                ChangeTurn();
+                OpenGameOverPanel();
+            }
+        }
+        else
+        {
+            if (playerBTimeRemaining > 0 && _timerIsRunning)
+            {
+                playerBTimeRemaining -= Time.deltaTime;
+            }
+            else if (playerBTimeRemaining <= 0)
+            {
+                ChangeTurn();
+                OpenGameOverPanel();
+            }
+        }
+    }
+
+    void DisplayTime()
+    {
+        playerATimerText.text = FormatTime(playerATimeRemaining);
+        playerBTimerText.text = FormatTime(playerBTimeRemaining);
+    }
+
+    string FormatTime(float timeRemaining)
+    {
+        timeRemaining = Mathf.Max(0f, timeRemaining);
+        int minutes = Mathf.FloorToInt(timeRemaining / 60);
+        int seconds = Mathf.FloorToInt(timeRemaining % 60);
+        return $"{minutes}:{seconds:00}";
+    }
+
     
     public void SetPlayerTurnPanel(PlayerType playerTurnType)
     {
