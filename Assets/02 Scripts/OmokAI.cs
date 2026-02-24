@@ -12,22 +12,23 @@ public class OmokAI : MonoBehaviour
     private const int OPEN_TWO = 50;
     private const int TWO = 10;
 
-    public Vector2Int FindBestMove(OmokBoard board, int player)
+    public Vector2Int FindBestMove(BoardData board, Cell aiCell)
     {
         int bestScore = int.MinValue;
-        Vector2Int bestMove = new Vector2Int(7, 7); // 기본 중앙값
-
+        Vector2Int bestMove = new Vector2Int(board.Size / 2, board.Size / 2); // 기본 중앙값
+        
         List<Vector2Int> candidates = GetCandidateMoves(board);
         if (candidates.Count == 0) return bestMove;
 
         foreach (var move in candidates)
         {
-            OmokBoard boardCopy = board.Clone();
-            boardCopy.PlaceStone(move.x, move.y, player);
+            board.PlaceTemp(move.x, move.y, aiCell);
 
-            // 미니맥스 알고리즘으로 가치 평가
-            int score = Minimax(boardCopy, 3, false, player, int.MinValue, int.MaxValue);
+            // 미니맥스 호출 (depth 3)
+            int score = Minimax(board, 3, false, aiCell, int.MinValue, int.MaxValue);
             
+            board.UndoTemp(); // 착수 취소 (원상복구)
+
             if (score > bestScore)
             {
                 bestScore = score;
@@ -38,11 +39,11 @@ public class OmokAI : MonoBehaviour
     }
 
     //미니맥스 알고리즘 (알파베타 가지치기 적용 - 이전에 찾은 다른 길보다 나쁘다는 것이 확실해지면 계산을 즉시 중단)
-    private int Minimax(OmokBoard board, int depth, bool isMaximizing, int player, int alpha, int beta)
+    private int Minimax(BoardData board, int depth, bool isMaximizing, Cell aiCell, int alpha, int beta)
     {
-        if (depth == 0) return EvaluateBoard(board, player);    //death(몇 수까지 내다볼 것인지)
+        if (depth == 0) return EvaluateBoard(board, aiCell);    //death(몇 수까지 내다볼 것인지)
 
-        int opponent = (player == 1) ? 2 : 1;   //흑백 진영 확인
+        Cell opponent = (aiCell == Cell.AI) ? Cell.Human : Cell.AI;   //흑백 진영 확인
 
         List<Vector2Int> candidates = GetCandidateMoves(board);
 
@@ -51,10 +52,10 @@ public class OmokAI : MonoBehaviour
             int maxScore = int.MinValue;
             foreach (var move in candidates)
             {
-                OmokBoard boardCopy = board.Clone();
-                boardCopy.PlaceStone(move.x, move.y, player);
+                board.PlaceTemp(move.x, move.y, aiCell);
+                int score = Minimax(board, depth - 1, false, aiCell, alpha, beta);
+                board.UndoTemp();
 
-                int score = Minimax(boardCopy, depth - 1, false, player, alpha, beta);
                 maxScore = Mathf.Max(maxScore, score);
                 alpha = Mathf.Max(alpha, score);
                 if (beta <= alpha) break;   //알파-베타 가지치기
@@ -66,10 +67,10 @@ public class OmokAI : MonoBehaviour
             int minScore = int.MaxValue;
             foreach (var move in candidates)
             {
-                OmokBoard boardCopy = board.Clone();
-                boardCopy.PlaceStone(move.x, move.y, opponent);
+                board.PlaceTemp(move.x, move.y, opponent);
+                int score = Minimax(board, depth - 1, true, aiCell, alpha, beta);
+                board.UndoTemp();
 
-                int score = Minimax(boardCopy, depth - 1, true, player, alpha, beta);
                 minScore = Mathf.Min(minScore, score);
                 beta = Mathf.Min(beta, score);
                 if (beta <= alpha) break;   //알파-베타 가지치기
@@ -79,61 +80,54 @@ public class OmokAI : MonoBehaviour
     }
 
     // 전체 보드 상태 평가 (휴리스틱)
-    private int EvaluateBoard(OmokBoard board, int player)
+    private int EvaluateBoard(BoardData board, Cell aiCell)
     {
         int totalScore = 0;
-        int opponent = (player == 1) ? 2 : 1;   //흑백 진영
+        Cell opponent = (aiCell == Cell.AI) ? Cell.Human : Cell.AI;  //흑백 진영
+        int size = board.Size;
 
-        for (int i = 0; i < OmokBoard.SIZE; i++)
+        for (int i = 0; i < size; i++)
         {
-            for (int j = 0; j < OmokBoard.SIZE; j++)
+            for (int j = 0; j < size; j++)
             {
-                int stone = board.GetCell(i, j);
-                if (stone != 0)
-                {
-                    int score = EvaluateMove(board, i, j, stone);
-                    // 가중치 휴리스틱: 중앙 점수 추가 (중앙에 가까울수록 높은 점수 구석으로 갈수록 낮은 점수)
-                    score += (7 - Mathf.Abs(7 - i)) + (7 - Mathf.Abs(7 - j));
+                Cell stone = board.Get(i, j);
+                if (stone == Cell.Empty) continue;  // 빈 칸 무시
+                
+                int score = EvaluateMove(board, i, j, stone);
 
-                    if (stone == player) totalScore += score;
-                    else totalScore -= (int)(score * 1.5); // 방어에 가중치 부여
-                }
+                // 가중치 휴리스틱 - 중앙 점수 추가 (중앙에 가까울수록 높은 점수 구석으로 갈수록 낮은 점수)
+                int center = size / 2;
+                score += (center - Mathf.Abs(center - i)) + (center - Mathf.Abs(center - j));
+
+                if (stone == aiCell) totalScore += score;
+
+                else totalScore -= (int)(score * 1.5); // 방어에 가중치 부여
             }
         }
         return totalScore;
     }
 
     //종합 점수 평가(4방향 모두 평가 후 최종 판단)
-    public int EvaluateMove(OmokBoard board, int x, int y, int player)
+    public int EvaluateMove(BoardData board, int x, int y, Cell stone)
     {
         int score = 0;
-        score += EvaluateLine(board, x, y, 1, 0, player);  // 가로
-        score += EvaluateLine(board, x, y, 0, 1, player);  // 세로
-        score += EvaluateLine(board, x, y, 1, 1, player);  // 대각선 ↘
-        score += EvaluateLine(board, x, y, 1, -1, player); // 대각선 ↗
+        score += EvaluateLine(board, x, y, 1, 0, stone);  // 가로
+        score += EvaluateLine(board, x, y, 0, 1, stone);  // 세로
+        score += EvaluateLine(board, x, y, 1, 1, stone);  // 대각선 ↘
+        score += EvaluateLine(board, x, y, 1, -1, stone); // 대각선 ↗
         return score;
     }
 
     //점수 평가 - 연속된 돌의 개수와 열린 공간 여부에 따라 점수 부여
-    private int EvaluateLine(OmokBoard board, int x, int y, int dx, int dy, int player)
+    private int EvaluateLine(BoardData board, int x, int y, int dx, int dy, Cell stone)
     {
-        int count = 1;  //연속되는 돌 개수
-        int openEnds = 0;   //양 끝 막혀 있는지 여부
+        int count = 1 + OmokRule.CountOneDir(board, x, y, dx, dy, stone) 
+                      + OmokRule.CountOneDir(board, x, y, -dx, -dy, stone);
 
-        // 양방향 탐색으로 연속된 돌과 열린 공간 확인
-        void Check(int dxx, int dyy)
-        {
-            int nx = x + dxx, ny = y + dyy;
-            while (nx >= 0 && nx < 15 && ny >= 0 && ny < 15 && board.GetCell(nx, ny) == player)
-            {
-                count++; nx += dxx; ny += dyy;
-            }
-            if (nx >= 0 && nx < 15 && ny >= 0 && ny < 15 && board.GetCell(nx, ny) == 0)
-                openEnds++;
-        }
-
-        Check(dx, dy);
-        Check(-dx, -dy);
+        int openEnds = 0;
+        // 양 끝이 비어있는지 확인
+        if (CheckOpen(board, x, y, dx, dy, stone)) openEnds++;
+        if (CheckOpen(board, x, y, -dx, -dy, stone)) openEnds++;
 
         if (count >= 5) return FIVE;
         if (count == 4) return (openEnds == 2) ? OPEN_FOUR : (openEnds == 1 ? FOUR : 0);
@@ -142,27 +136,40 @@ public class OmokAI : MonoBehaviour
         return 0;
     }
 
+    private bool CheckOpen(BoardData board, int x, int y, int dx, int dy, Cell stone)
+    {
+        int nx = x;
+        int ny = y;
+        while (board.InBounds(nx, ny) && board.Get(nx, ny) == stone)
+        {
+            nx += dx;
+            ny += dy;
+        }
+        return board.InBounds(nx, ny) && board.Get(nx, ny) == Cell.Empty;
+    }
+
 
     // 최적화 - 돌 주변 2칸 이내의 후보 수 줄이기
-    private List<Vector2Int> GetCandidateMoves(OmokBoard board)
+    private List<Vector2Int> GetCandidateMoves(BoardData board)
     {
         List<Vector2Int> candidates = new List<Vector2Int>();
-        bool[,] considered = new bool[15, 15];
+        int size = board.Size;
+        bool[,] considered = new bool[size, size];
 
         // 이미 놓인 돌 주변 탐색
-        for (int i = 0; i < 15; i++)
+        for (int i = 0; i < size; i++)
         {
-            for (int j = 0; j < 15; j++)
+            for (int j = 0; j < size; j++)
             {
-                if (board.GetCell(i, j) != 0)   // 돌이 있는 곳 발견
+                if (board.Get(i, j) != Cell.Empty)   // 돌이 있는 곳 발견
                 {
-                    for (int dx = -2; dx <= 2; dx++)    // 주변 2칸 이내 조사
+                    for (int dx = -1; dx <= 1; dx++)    // 주변 2칸 이내 조사
                     {
-                        for (int dy = -2; dy <= 2; dy++)
+                        for (int dy = -1; dy <= 1; dy++)
                         {
                             int nx = i + dx; int ny = j + dy;
-                            if (nx >= 0 && nx < 15 && ny >= 0 && ny < 15 && 
-                                board.GetCell(nx, ny) == 0 && !considered[nx, ny])  // 보드 안쪽이고, 빈칸이며, 중복이 아닐 때만 추가
+                            if (nx >= 0 && nx < size && ny >= 0 && ny < size && 
+                                board.Get(nx, ny) == Cell.Empty && !considered[nx, ny])  // 보드 안쪽이고, 빈칸이며, 중복이 아닐 때만 추가
                             {
                                 candidates.Add(new Vector2Int(nx, ny));
                                 considered[nx, ny] = true;
@@ -172,6 +179,8 @@ public class OmokAI : MonoBehaviour
                 }
             }
         }
+        if (candidates.Count == 0) candidates.Add(new Vector2Int(size / 2, size / 2));  //AI 첫 수는 중앙
+
         return candidates;
     }
 }

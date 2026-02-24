@@ -15,7 +15,7 @@ public class AudioManager : Singleton<AudioManager>
     [Header("SFX Clips")]
     [SerializeField] private AudioClip buttonHoverSfx;
     [SerializeField] private AudioClip buttonClickSfx;
-    [SerializeField] private AudioClip stonePlaceSfx;
+    [SerializeField] private AudioClip[] stonePlaceSfx;
     [SerializeField] private AudioClip winSfx;
     [SerializeField] private AudioClip loseSfx;
 
@@ -96,10 +96,12 @@ public class AudioManager : Singleton<AudioManager>
         PlaySFX(buttonClickSfx);
     }
 
-    // 돌 놓는 효과음
+    // 돌 놓는 효과음 
     public void PlayStonePlaceSfx()
     {
-        PlaySFX(stonePlaceSfx);
+        if (stonePlaceSfx == null || stonePlaceSfx.Length == 0) return;
+        AudioClip clip = stonePlaceSfx[Random.Range(0, stonePlaceSfx.Length)];
+        PlaySFX(clip);
     }
 
     // 승리 효과음

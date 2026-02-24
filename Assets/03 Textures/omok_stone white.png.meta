@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 6b57822c824e1834494916fab2e335b0
+guid: 447746d0fbd2e3c40bbf64788cceeff5
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 3748487409157748694
-    second: omok-04_0
+      213: 8598304006380081400
+    second: omok_thick-03_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: omok-04_0
+      name: omok_thick-03_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 1
+        y: 0
         width: 267
-        height: 265
+        height: 267
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6d73fd3307d450430800000000000000
-      internalID: 3748487409157748694
+      spriteID: 8f05a1320ff435770800000000000000
+      internalID: 8598304006380081400
       vertices: []
       indices: 
       edges: []
@@ -148,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      omok-04_0: 3748487409157748694
+      omok_thick-03_0: 8598304006380081400
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

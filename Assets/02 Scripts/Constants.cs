@@ -10,5 +10,5 @@ public static class Constants
     public enum PlayerType { None, Player1, Player2 }
 
     // 보드 크기
-    public const int BOARD_SIZE = 13;
+    public const int BOARD_SIZE = 15;
 }
