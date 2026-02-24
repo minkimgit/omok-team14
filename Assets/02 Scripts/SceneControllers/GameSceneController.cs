@@ -8,6 +8,7 @@ using static Constants;
 
 public class GameSceneController : MonoBehaviour
 {
+    [SerializeField] private OmokAI omokAI;
     [SerializeField] private Image playerATurnImage;
     [SerializeField] private Image playerBTurnImage;
     
@@ -30,12 +31,15 @@ public class GameSceneController : MonoBehaviour
     private string _victoryText = "승리하였습니다.";
     private string _defeatText = "패배하였습니다.";
     
-    private BoardData _boardData;
+
+    private BoardData _boardData;    
     private AudioManager _audioManager;
+    private GameType _currentGameType;
     private int _currentPlayer;  // 현재 턴인 플레이어 (1 or 2)
     private int _startingPlayer; // 이번 게임에서 흑돌(선공)을 맡은 플레이어 (1 or 2)
     private float setPlayerATimeRemaining;
     private float setPlayerBTimeRemaining;
+    private bool _aiTurn = false; // AI의 턴 여부
 
     private void Start()
     {
@@ -43,6 +47,8 @@ public class GameSceneController : MonoBehaviour
          setPlayerBTimeRemaining = playerBTimeRemaining;
         _audioManager = FindObjectOfType<AudioManager>();
         _boardData = new BoardData(BOARD_SIZE);
+        _currentGameType = GameManager.Instance.CurrentGameType;
+        
         boardRenderer.OnCellClicked += OnCellClicked;
         SetFirstPlayer();
     }
@@ -90,18 +96,42 @@ public class GameSceneController : MonoBehaviour
     //**돌 배치**
     private void OnCellClicked(int row, int col)
     {
-        if (!_boardData.TryPlace(col, row, PlayerToCell(_currentPlayer))) return;
+        if (_aiTurn) return; // AI의 턴인 경우 클릭 무시
+        if (!PlaceStone(row, col)) return;  // 유효하지 않은 위치에 돌을 놓으려는 경우 무시
+
+        // 싱글 플레이고 현재 턴이 AI라면 AI 실행
+        if (_currentGameType == GameType.SinglePlay && _currentPlayer == 2)
+        {
+            // 플레이어가 바로 클릭하지 못하게 하거나 AI의 생각을 표현하기 위해 코루틴 사용
+            StartCoroutine(AIDelayRoutine());
+        }
+    }
+
+    private bool PlaceStone(int row, int col)
+    {
+        Cell currentCell = PlayerToCell(_currentPlayer);
+
+        if (currentCell == Cell.Human) // 흑돌인가
+        {
+            if (OmokRule.IsForbiddenMove(_boardData, col, row, currentCell))
+            {
+                Debug.Log("금수(쌍삼/사사) 위치입니다!");
+                return false; 
+            }
+        }
+
+        if (!_boardData.TryPlace(col, row, PlayerToCell(_currentPlayer))) return false;
 
         boardRenderer.PlaceStoneAt(row, col, GetStoneType(_currentPlayer));
         _audioManager.PlayStonePlaceSfx();
         
-        //승패 확인
+        // 승패 확인
         if (OmokRule.CheckWin(_boardData, col, row, PlayerToCell(_currentPlayer)))
         {
             Debug.Log($"플레이어 {_currentPlayer} 승리!");
             
             OpenGameOverPanel();
-            return;
+            return true;
         }
         
         ChangeTurn();
@@ -114,6 +144,7 @@ public class GameSceneController : MonoBehaviour
         GameManager.Instance.SetGameTurn(
             _currentPlayer == 1 ? PlayerType.Player1 : PlayerType.Player2
         );
+        return true;
     }
     
     private void OnDestroy()
@@ -221,5 +252,20 @@ public class GameSceneController : MonoBehaviour
                 playerATurnRect.DOScale(1f, 1).SetEase(Ease.OutBack);
                 break;
         }
+    }
+
+    private System.Collections.IEnumerator AIDelayRoutine()
+    {
+        _aiTurn = true; // AI의 턴 시작
+        Debug.Log("AI가 생각 중...");
+        yield return new WaitForSeconds(0.5f);
+
+        // AI로부터 최선의 수 계산 (Cell.AI 진영으로 계산)
+        Vector2Int aiMove = omokAI.FindBestMove(_boardData, Cell.AI);
+        
+        // AI의 수를 보드에 배치 (row = y, col = x 매칭 주의)
+        PlaceStone(aiMove.y, aiMove.x);
+        _aiTurn = false; // AI의 턴 종료
+        Debug.Log("AI가 수를 두었습니다");
     }
 }
