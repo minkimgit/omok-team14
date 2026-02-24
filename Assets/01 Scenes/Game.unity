@@ -314,6 +314,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameSceneController
   playerATurnImage: {fileID: 444819599}
   playerBTurnImage: {fileID: 1787963481}
+  playerATurnRect: {fileID: 444819598}
+  playerBTurnRect: {fileID: 1787963480}
   boardRenderer: {fileID: 1164801739}
 --- !u!1 &228756619
 GameObject:

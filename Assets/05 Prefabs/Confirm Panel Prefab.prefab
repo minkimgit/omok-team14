@@ -261,7 +261,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1455935064930791470}
         m_TargetAssemblyTypeName: ConfirmPanelController, Assembly-CSharp
-        m_MethodName: onClickNoButton
+        m_MethodName: onClickRedButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -435,6 +435,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ConfirmPanelController
   panelTransform: {fileID: 4384147434641716265}
   messageText: {fileID: 6413499013352834476}
+  greenButtonText: {fileID: 6358202568116714436}
+  redButtonText: {fileID: 8096085963246959406}
 --- !u!1 &2636399167684084884
 GameObject:
   m_ObjectHideFlags: 0
@@ -984,7 +986,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1455935064930791470}
         m_TargetAssemblyTypeName: ConfirmPanelController, Assembly-CSharp
-        m_MethodName: onClickYesButton
+        m_MethodName: onClickGreenButton
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

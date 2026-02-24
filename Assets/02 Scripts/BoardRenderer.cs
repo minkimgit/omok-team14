@@ -7,14 +7,14 @@ using static Constants;
 [RequireComponent(typeof(BoxCollider2D))]
 public class BoardRenderer : MonoBehaviour
 {
-    [Header("Stone Prefabs")]
+    [Header("돌 프리팹")]
     [SerializeField] private GameObject blackStonePrefab;
     [SerializeField] private GameObject whiteStonePrefab;
 
-    [Header("Hover Indicator")]
+    [Header("호버 프리팹")]
     [SerializeField] private GameObject hoverIndicatorPrefab;
 
-    [Header("Board Settings")]
+    [Header("보드 세팅")]
     [SerializeField] private Camera gameCamera;
     // 보드 테두리에서 첫/마지막 격자선까지의 거리 (월드 단위)
     [SerializeField] private float boardPadding = 0.5f;

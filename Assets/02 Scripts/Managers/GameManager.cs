@@ -24,6 +24,7 @@ public class GameManager : Singleton<GameManager>
     {
         _canvas = FindFirstObjectByType<Canvas>();
         _gameSceneController = FindFirstObjectByType<GameSceneController>();
+        
     }
 
     // Game O/X UI 업데이트
@@ -46,10 +47,10 @@ public class GameManager : Singleton<GameManager>
     }
 
     // // Confirm 패널 열기
-    public void OpenConfirmPanel(string message, ConfirmPanelController.OnClickConfirm onClickConfirm)
+    public void OpenConfirmPanel(string message, string confirmText, string cancelText, ConfirmPanelController.OnClickConfirm onClickConfirm, ConfirmPanelController.OnClickCancel onClickCancel = null)
     {
         var confirmPanelObject = Instantiate(confirmPanelPrefab, _canvas.transform);
-        confirmPanelObject.GetComponent<ConfirmPanelController>().Show(message, onClickConfirm);
+        confirmPanelObject.GetComponent<ConfirmPanelController>().Show(message, confirmText, cancelText, onClickConfirm,  onClickCancel);
     }
 
     // 씬 전환 (Main > Game)
