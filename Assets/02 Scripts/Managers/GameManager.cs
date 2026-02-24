@@ -10,7 +10,7 @@ public class GameManager : Singleton<GameManager>
 
     // 캔버스
     private Canvas _canvas;
-
+    
     // 게임 화면의 UI 컨트롤러
     private GameSceneController _gameSceneController; 
     //
@@ -18,7 +18,7 @@ public class GameManager : Singleton<GameManager>
     // private GameLogic _gameLogic;
 
     // 게임의 종류 (싱글, 듀얼)
-    private GameType _gameType;
+    public GameType CurrentGameType { get; private set; }
 
     protected override void OnSceneLoad(Scene scene, LoadSceneMode mode)
     {
@@ -56,7 +56,7 @@ public class GameManager : Singleton<GameManager>
     // 씬 전환 (Main > Game)
     public void ChangeToGameScene(GameType gameType)
     {
-        _gameType = gameType;
+        CurrentGameType = gameType;
         SceneManager.LoadScene(SCENE_GAME);
     }
 
@@ -65,4 +65,7 @@ public class GameManager : Singleton<GameManager>
     {
         SceneManager.LoadScene(SCENE_MAIN);
     }
+
+    
+
 }
