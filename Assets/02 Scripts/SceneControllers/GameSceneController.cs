@@ -84,6 +84,10 @@ public class GameSceneController : MonoBehaviour
             playerAWhiteStoneImage.gameObject.SetActive(true);
             playerBBlackStoneImage.gameObject.SetActive(true);
         }
+
+        // 싱글 플레이에서 AI가 선공이면 첫 수를 자동으로 실행
+        if (_currentGameType == GameType.SinglePlay && _currentPlayer == 2)
+            StartCoroutine(AIDelayRoutine());
             
     }
 
@@ -133,8 +137,8 @@ public class GameSceneController : MonoBehaviour
             OpenGameOverPanel();
             return true;
         }
-        
         ChangeTurn();
+        return true;
     }
     
     // 턴 교체
@@ -144,7 +148,6 @@ public class GameSceneController : MonoBehaviour
         GameManager.Instance.SetGameTurn(
             _currentPlayer == 1 ? PlayerType.Player1 : PlayerType.Player2
         );
-        return true;
     }
     
     private void OnDestroy()
@@ -256,16 +259,27 @@ public class GameSceneController : MonoBehaviour
 
     private System.Collections.IEnumerator AIDelayRoutine()
     {
-        _aiTurn = true; // AI의 턴 시작
+        _aiTurn = true;
+        boardRenderer.SetHoverEnabled(false); // AI 턴 중 호버 숨김
         Debug.Log("AI가 생각 중...");
         yield return new WaitForSeconds(0.5f);
 
-        // AI로부터 최선의 수 계산 (Cell.AI 진영으로 계산)
-        Vector2Int aiMove = omokAI.FindBestMove(_boardData, Cell.AI);
-        
+        // FindBestMove를 백그라운드 스레드에서 실행해 메인 스레드(타이머 등)가 멈추지 않도록 함
+        Vector2Int aiMove = Vector2Int.zero;
+        bool isDone = false;
+        System.Threading.Tasks.Task.Run(() =>
+        {
+            aiMove = omokAI.FindBestMove(_boardData, Cell.AI);
+            isDone = true;
+        });
+
+        // AI 계산이 끝날 때까지 프레임마다 양보 (타이머는 계속 동작)
+        yield return new WaitUntil(() => isDone);
+
         // AI의 수를 보드에 배치 (row = y, col = x 매칭 주의)
         PlaceStone(aiMove.y, aiMove.x);
-        _aiTurn = false; // AI의 턴 종료
+        _aiTurn = false;
+        boardRenderer.SetHoverEnabled(true); // AI 턴 종료 후 호버 복원
         Debug.Log("AI가 수를 두었습니다");
     }
 }

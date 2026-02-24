@@ -70,10 +70,20 @@ public class BoardRenderer : MonoBehaviour
             HandleClick();
     }
 
+    private bool _hoverEnabled = true;
+
+    public void SetHoverEnabled(bool enabled)
+    {
+        _hoverEnabled = enabled;
+        if (!enabled && _hoverIndicator != null)
+            _hoverIndicator.SetActive(false);
+    }
+
     private void HandleHover()
     {
+        if (!_hoverEnabled) return;
         if (EventSystem.current.IsPointerOverGameObject()) return;
-        
+
         if (_hoverIndicator == null) return;
 
         Vector2 mouseWorldPos = gameCamera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
