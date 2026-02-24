@@ -1,6 +1,7 @@
 using System;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using static Constants;
 
@@ -97,6 +98,11 @@ public class BoardRenderer : MonoBehaviour
     private void HandleClick()
     {
         Vector2 mouseWorldPos = gameCamera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+        
+        if (EventSystem.current.IsPointerOverGameObject())
+        {
+            return;
+        }
 
         // 보드 콜라이더에만 반응
         RaycastHit2D hit = Physics2D.Raycast(mouseWorldPos, Vector2.zero);

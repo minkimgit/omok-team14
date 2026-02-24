@@ -17,25 +17,30 @@ public class GameSceneController : MonoBehaviour
     
 
     private AudioManager _audioManager;
-    private OmokBoard _omokBoard;
+    private BoardData _boardData;
     private int _currentPlayer = 1; // 1 = 흑, 2 = 백
 
     private void Start()
     {
         _audioManager = FindObjectOfType<AudioManager>();
-        _omokBoard = new OmokBoard();
+        _boardData = new BoardData(BOARD_SIZE);
         boardRenderer.OnCellClicked += OnCellClicked;
         GameManager.Instance.SetGameTurn(PlayerType.Player1);
     }
+
+    // int 플레이어 번호를 Cell 열거형으로 변환
+    private Cell PlayerToCell(int player) => player == 1 ? Cell.Human : Cell.AI;
     
+    //**돌 배치**
     private void OnCellClicked(int row, int col)
     {
-        if (!_omokBoard.PlaceStone(col, row, _currentPlayer)) return; 
-        
+        if (!_boardData.TryPlace(col, row, PlayerToCell(_currentPlayer))) return;
+
         boardRenderer.PlaceStoneAt(row, col, _currentPlayer);
         _audioManager.PlayStonePlaceSfx();
-
-        if (_omokBoard.CheckWin(col, row, _currentPlayer))
+        
+        //승패 확인
+        if (OmokRule.CheckWin(_boardData, col, row, PlayerToCell(_currentPlayer)))
         {
             Debug.Log($"플레이어 {_currentPlayer} 승리!");
             _audioManager.PlayWinSfx();
@@ -78,7 +83,7 @@ public class GameSceneController : MonoBehaviour
     private void ResetGame()
     {
         boardRenderer.ClearBoard();
-        _omokBoard = new OmokBoard();
+        _boardData.Clear();
         _currentPlayer = 1;
         GameManager.Instance.SetGameTurn(PlayerType.Player1);
     }
