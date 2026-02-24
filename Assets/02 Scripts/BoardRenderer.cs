@@ -19,6 +19,10 @@ public class BoardRenderer : MonoBehaviour
     [SerializeField] private Camera gameCamera;
     // 보드 테두리에서 첫/마지막 격자선까지의 거리 (월드 단위)
     [SerializeField] private float boardPadding = 0.5f;
+    
+    [Header("빨간 점 프리팹")]
+    [SerializeField] private GameObject redDotPrefab; // <-- 드래그 앤 드롭용
+    private GameObject _lastMoveIndicator;
 
     // 셀 클릭 시 호출되는 콜백: (row, col)
     public Action<int, int> OnCellClicked;
@@ -48,6 +52,12 @@ public class BoardRenderer : MonoBehaviour
         {
             _hoverIndicator = Instantiate(hoverIndicatorPrefab, transform);
             _hoverIndicator.SetActive(false);
+        }
+        
+        if (redDotPrefab != null)
+        {
+            _lastMoveIndicator = Instantiate(redDotPrefab, transform);
+            _lastMoveIndicator.SetActive(false);
         }
     }
 
@@ -136,6 +146,14 @@ public class BoardRenderer : MonoBehaviour
 
         _stones[row, col].transform.localScale = Vector3.zero;
         _stones[row, col].transform.DOScale(1, .3f).SetEase(Ease.OutBack);
+        
+        // 빨간 점 위치 갱신
+        if (_lastMoveIndicator != null)
+        {
+            _lastMoveIndicator.SetActive(true);
+            // 돌 바로 위(Z축)에 살짝 띄워서 표시
+            _lastMoveIndicator.transform.position = worldPos + new Vector3(0, 0, -0.05f);
+        }
     }
 
     // 특정 위치의 돌 제거
@@ -152,6 +170,9 @@ public class BoardRenderer : MonoBehaviour
         for (int row = 0; row < BOARD_SIZE; row++)
             for (int col = 0; col < BOARD_SIZE; col++)
                 RemoveStoneAt(row, col);
+        
+        // 빨간 점 클리어
+        if (_lastMoveIndicator != null) _lastMoveIndicator.SetActive(false);
     }
 
     // 그리드의 [0,0] 시작점 (스프라이트 중앙 기준으로 계산)

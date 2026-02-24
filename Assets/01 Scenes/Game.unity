@@ -1441,6 +1441,7 @@ MonoBehaviour:
   hoverIndicatorPrefab: {fileID: 1801586660481040183, guid: 1469232f3f77d6b4ea8018778fe48edf, type: 3}
   gameCamera: {fileID: 519420031}
   boardPadding: 0.45
+  redDotPrefab: {fileID: 6832466400157723701, guid: 54cfafa1a4af9a14a8f3fa92ac10aa47, type: 3}
 --- !u!61 &1164801740
 BoxCollider2D:
   m_ObjectHideFlags: 0
