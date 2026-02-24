@@ -15,6 +15,8 @@ public static class OmokRule
     // ===== 핵심 API =====
     public static bool CheckWin(BoardData board, int lastX, int lastY, Cell stone)
     {
+        if(stone == Cell.Empty) return false; // 빈 칸에 놓인 돌은 승리 조건 검사할 필요 없음
+        
         foreach(var(dx,dy) in DIRS)
         {
             int connected = CountConnected(board, lastX, lastY, dx, dy, stone);

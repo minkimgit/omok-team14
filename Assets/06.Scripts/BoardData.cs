@@ -1,6 +1,6 @@
 // BoardData.cs
 // 목적: 오목 보드의 "순수 데이터"만 관리한다.
-
+using System.Collections.Generic;
 
 public enum Cell
 {
