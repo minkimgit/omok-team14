@@ -53,6 +53,17 @@ public class GameSceneController : MonoBehaviour
 
     private bool PlaceStone(int row, int col)
     {
+        Cell currentCell = PlayerToCell(_currentPlayer);
+
+        if (currentCell == Cell.Human) // 흑돌인가
+        {
+            if (OmokRule.IsForbiddenMove(_boardData, col, row, currentCell))
+            {
+                Debug.Log("금수(쌍삼/사사) 위치입니다!");
+                return false; 
+            }
+        }
+
         if (!_boardData.TryPlace(col, row, PlayerToCell(_currentPlayer))) return false;
 
         boardRenderer.PlaceStoneAt(row, col, _currentPlayer);
