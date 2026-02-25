@@ -20,6 +20,7 @@ public class MainSceneController : MonoBehaviour
 
     public void OnClickRankingButton()
     {
+        
     }
 
     public void OnClickQuitGameButton()
@@ -29,5 +30,11 @@ public class MainSceneController : MonoBehaviour
 #else
         Application.Quit();
 #endif
+    }
+
+    public void OnClickAccountButton()
+    {
+        Debug.Log("회원가입/로그인 버튼 클릭됨");
+        GameManager.Instance.OpenLoginPanel();
     }
 }

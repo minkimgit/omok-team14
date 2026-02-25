@@ -7,6 +7,11 @@ public class GameManager : Singleton<GameManager>
     [SerializeField] private GameObject settingsPanelPrefab;
     [SerializeField] private GameObject confirmPanelPrefab;
     [SerializeField] private GameObject rankingPanelPrefab;
+    
+    // 계정 관련
+    [SerializeField] private GameObject loginPanelPrefab;
+    [SerializeField] private GameObject registerPanelPrefab;
+    [SerializeField] private GameObject logoutConfirmPanelPrefab;
 
     // 캔버스
     private Canvas _canvas;
@@ -24,7 +29,6 @@ public class GameManager : Singleton<GameManager>
     {
         _canvas = FindFirstObjectByType<Canvas>();
         _gameSceneController = FindFirstObjectByType<GameSceneController>();
-        
     }
 
     // Game O/X UI 업데이트
@@ -53,6 +57,19 @@ public class GameManager : Singleton<GameManager>
         confirmPanelObject.GetComponent<ConfirmPanelController>().Show(message, confirmText, cancelText, onClickConfirm,  onClickCancel);
     }
 
+    // 회원가입/로그인 팝업 열기
+    public void OpenLoginPanel()
+    {
+        var loginPanelObject = Instantiate(loginPanelPrefab, _canvas.transform);
+        loginPanelObject.GetComponent<LoginPanelController>().Show();
+    }
+    
+    public void OpenRegisterPanel()
+    {
+        var registerPanelObject = Instantiate(registerPanelPrefab, _canvas.transform);
+        registerPanelObject.GetComponent<RegisterPanelController>().Show();
+    }
+
     // 씬 전환 (Main > Game)
     public void ChangeToGameScene(GameType gameType)
     {
@@ -65,7 +82,4 @@ public class GameManager : Singleton<GameManager>
     {
         SceneManager.LoadScene(SCENE_MAIN);
     }
-
-    
-
 }

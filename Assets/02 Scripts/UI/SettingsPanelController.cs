@@ -7,6 +7,7 @@ public class SettingsPanelController : PanelController
     private AudioManager audioManager;
     [SerializeField] private Slider effectVolumeSlider;
     [SerializeField] private Slider musicVolumeSlider;
+    
     public void OnEnable()
     {
         audioManager = FindObjectOfType<AudioManager>();
