@@ -12,8 +12,9 @@ public class BoardRenderer : MonoBehaviour
     [SerializeField] private GameObject blackStonePrefab;
     [SerializeField] private GameObject whiteStonePrefab;
 
-    [Header("호버 프리팹")]
+    [Header("호버 / 그림자 프리팹")]
     [SerializeField] private GameObject hoverIndicatorPrefab;
+    [SerializeField] private Vector3 shadowOffset = new Vector3(0.05f, -0.05f, 0.05f);
 
     [Header("보드 세팅")]
     [SerializeField] private Camera gameCamera;
@@ -144,6 +145,14 @@ public class BoardRenderer : MonoBehaviour
         Vector3 worldPos = GridToWorldPosition(row, col);
         _stones[row, col] = Instantiate(prefab, worldPos, Quaternion.identity, transform);
 
+        // 돌 아래에 그림자 생성
+        if (hoverIndicatorPrefab != null)
+        {
+            GameObject shadow = Instantiate(hoverIndicatorPrefab, _stones[row, col].transform);
+            shadow.transform.localPosition = shadowOffset;
+        }
+
+        // 돌 생성 애니메이션
         _stones[row, col].transform.localScale = Vector3.zero;
         _stones[row, col].transform.DOScale(1, .3f).SetEase(Ease.OutBack);
         

@@ -1439,6 +1439,7 @@ MonoBehaviour:
   blackStonePrefab: {fileID: 7144879542145732839, guid: cc719b24c3b16d141aac07411b340f80, type: 3}
   whiteStonePrefab: {fileID: 1801586660481040183, guid: 0e165fefab1d871459026dd53fd75a76, type: 3}
   hoverIndicatorPrefab: {fileID: 1801586660481040183, guid: 1469232f3f77d6b4ea8018778fe48edf, type: 3}
+  shadowOffset: {x: 0.25, y: -0.25, z: 0.05}
   gameCamera: {fileID: 519420031}
   boardPadding: 0.45
   redDotPrefab: {fileID: 6832466400157723701, guid: 54cfafa1a4af9a14a8f3fa92ac10aa47, type: 3}
