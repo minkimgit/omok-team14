@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using DG.Tweening;
 using NUnit.Framework.Constraints;
 using TMPro;
@@ -306,7 +307,7 @@ public class GameSceneController : MonoBehaviour
             OpenVictoryPanel();
     }
 
-    private System.Collections.IEnumerator AIDelayRoutine()
+    private IEnumerator AIDelayRoutine()
     {
         _aiTurn = true;
         boardRenderer.SetHoverEnabled(false); // AI 턴 중 호버 숨김
@@ -314,20 +315,16 @@ public class GameSceneController : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
 
         // FindBestMove를 백그라운드 스레드에서 실행해 타이머가 멈추지 않도록 함
-        Vector2Int aiMove = Vector2Int.zero;
-        bool isDone = false;
-        System.Threading.Tasks.Task.Run(() =>
-        {
-            aiMove = omokAI.FindBestMove(_boardData, Cell.AI);
-            isDone = true;
-        });
+        // Task<Vector2Int>로 결과를 받아 메모리 가시성(memory visibility) 문제를 방지
+        var aiTask = Task.Run(() => omokAI.FindBestMove(_boardData, Cell.AI));
 
         // AI 계산이 끝날 때까지 프레임마다 양보 (타이머는 계속 동작)
-        yield return new WaitUntil(() => isDone);
-        
+        yield return new WaitUntil(() => aiTask.IsCompleted);
+
         if (_timerIsRunning)
         {
-            // AI의 수를 보드에 배치 (row = y, col = x 매칭 주의)
+            // task.Result는 메모리 배리어를 보장하므로 항상 올바른 결과를 읽음
+            Vector2Int aiMove = aiTask.Result;
             PlaceStone(aiMove.y, aiMove.x);
             Debug.Log("AI가 수를 두었습니다");
         }
