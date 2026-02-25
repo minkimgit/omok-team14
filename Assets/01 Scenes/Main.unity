@@ -1305,7 +1305,8 @@ MonoBehaviour:
   settingsPanelPrefab: {fileID: 6439241661893308241, guid: 2866a1de645a3bc48b13ec4324ff6995, type: 3}
   confirmPanelPrefab: {fileID: 1604826522456750275, guid: ad4e1c15ffb38ac40b8b92874876b1c3, type: 3}
   rankingPanelPrefab: {fileID: 0}
-  accountPanelPrefab: {fileID: 8046607045602306842, guid: 7a9940b4e47f4f045a3a7fa4610c8453, type: 3}
+  loginPanelPrefab: {fileID: 8046607045602306842, guid: 7a9940b4e47f4f045a3a7fa4610c8453, type: 3}
+  registerPanelPrefab: {fileID: 8046607045602306842, guid: 91d26e49896a71548b5237f6548af410, type: 3}
   logoutConfirmPanelPrefab: {fileID: 526477228793621858, guid: 8edca8c2891048949877a8514e4da9a3, type: 3}
 --- !u!4 &649552434
 Transform:
