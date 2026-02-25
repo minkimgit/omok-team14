@@ -16,6 +16,7 @@ public class AudioManager : Singleton<AudioManager>
     [SerializeField] private AudioClip buttonHoverSfx;
     [SerializeField] private AudioClip buttonClickSfx;
     [SerializeField] private AudioClip[] stonePlaceSfx;
+    [SerializeField] private AudioClip connectFiveSfx;
     [SerializeField] private AudioClip winSfx;
     [SerializeField] private AudioClip loseSfx;
 
@@ -102,6 +103,11 @@ public class AudioManager : Singleton<AudioManager>
         if (stonePlaceSfx == null || stonePlaceSfx.Length == 0) return;
         AudioClip clip = stonePlaceSfx[Random.Range(0, stonePlaceSfx.Length)];
         PlaySFX(clip);
+    }
+
+    public void PlayConnectFiveSfx()
+    {
+        PlaySFX(connectFiveSfx);
     }
 
     // 승리 효과음

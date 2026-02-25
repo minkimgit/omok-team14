@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using DG.Tweening;
 using NUnit.Framework.Constraints;
 using TMPro;
@@ -132,9 +134,8 @@ public class GameSceneController : MonoBehaviour
         // 승패 확인
         if (OmokRule.CheckWin(_boardData, col, row, PlayerToCell(_currentPlayer)))
         {
-            Debug.Log($"플레이어 {_currentPlayer} 승리!");
-            
-            OpenGameOverPanel();
+            List<Vector2Int> winLine = OmokRule.GetWinningLine(_boardData, col, row, PlayerToCell(_currentPlayer));
+            StartCoroutine(WinRoutine(winLine));
             return true;
         }
         ChangeTurn();
@@ -165,11 +166,24 @@ public class GameSceneController : MonoBehaviour
     }
 
     // 게임오버 팝업
-    public void OpenGameOverPanel()
+    public void OpenVictoryPanel()
     {
         _timerIsRunning = false;
         _audioManager.PlayWinSfx();
         GameManager.Instance.OpenConfirmPanel(($"플레이어 {_currentPlayer} 승리!"), "다시하기", "나가기", () =>
+        {
+            ResetGame();
+        },
+        () =>
+        {
+            GameManager.Instance.ChangeToMainScene();
+        });
+    }
+    public void OpenDefeatPanel()
+    {
+        _timerIsRunning = false;
+        _audioManager.PlayLoseSfx();
+        GameManager.Instance.OpenConfirmPanel(("패배하였습니다"), "다시하기", "나가기", () =>
         {
             ResetGame();
         },
@@ -195,10 +209,14 @@ public class GameSceneController : MonoBehaviour
             {
                 playerATimeRemaining -= Time.deltaTime;
             }
-            else if (playerATimeRemaining <= 0)
+            else if (playerATimeRemaining <= 0 && _timerIsRunning)
             {
                 ChangeTurn();
-                OpenGameOverPanel();
+
+                if (_currentGameType == GameType.DualPlay)
+                    OpenVictoryPanel();
+                else
+                    OpenDefeatPanel();
             }
         }
         else
@@ -207,10 +225,10 @@ public class GameSceneController : MonoBehaviour
             {
                 playerBTimeRemaining -= Time.deltaTime;
             }
-            else if (playerBTimeRemaining <= 0)
+            else if (playerBTimeRemaining <= 0 && _timerIsRunning)
             {
                 ChangeTurn();
-                OpenGameOverPanel();
+                OpenVictoryPanel();
             }
         }
     }
@@ -228,7 +246,6 @@ public class GameSceneController : MonoBehaviour
         int seconds = Mathf.FloorToInt(timeRemaining % 60);
         return $"{minutes}:{seconds:00}";
     }
-
     
     public void SetPlayerTurnPanel(PlayerType playerTurnType)
     {
@@ -257,6 +274,38 @@ public class GameSceneController : MonoBehaviour
         }
     }
 
+    // 승리 돌 애니메이션 후 게임오버 패널 표시
+    private IEnumerator WinRoutine(List<Vector2Int> winLine)
+    {
+        _timerIsRunning = false;
+        _audioManager.PlayConnectFiveSfx();
+
+        const float punchDelay = 0.08f;  // 돌 사이 딜레이
+        const float punchDuration = 0.4f;  // 펀치 애니메이션 지속 시간
+
+        // 승리 돌 애니메이션
+        foreach (var pos in winLine)
+        {
+            GameObject stone = boardRenderer.GetStoneAt(pos.y, pos.x);
+            if (stone != null)
+            {
+                stone.transform.DOComplete();
+                stone.transform.DOPunchScale(Vector3.one * 0.4f, punchDuration, 6, 0.5f);
+                _audioManager.PlayStonePlaceSfx();
+            }
+
+            yield return new WaitForSeconds(punchDelay);
+        }
+
+        // 마지막 돌 애니메이션이 끝날 때까지 대기 후 패널 표시
+        yield return new WaitForSeconds(punchDuration + 0.2f);
+
+        if (_currentGameType == GameType.SinglePlay && _currentPlayer == 2)
+            OpenDefeatPanel();
+        else
+            OpenVictoryPanel();
+    }
+
     private System.Collections.IEnumerator AIDelayRoutine()
     {
         _aiTurn = true;
@@ -264,7 +313,7 @@ public class GameSceneController : MonoBehaviour
         Debug.Log("AI가 생각 중...");
         yield return new WaitForSeconds(0.5f);
 
-        // FindBestMove를 백그라운드 스레드에서 실행해 메인 스레드(타이머 등)가 멈추지 않도록 함
+        // FindBestMove를 백그라운드 스레드에서 실행해 타이머가 멈추지 않도록 함
         Vector2Int aiMove = Vector2Int.zero;
         bool isDone = false;
         System.Threading.Tasks.Task.Run(() =>
@@ -275,11 +324,20 @@ public class GameSceneController : MonoBehaviour
 
         // AI 계산이 끝날 때까지 프레임마다 양보 (타이머는 계속 동작)
         yield return new WaitUntil(() => isDone);
+        
+        if (_timerIsRunning)
+        {
+            // AI의 수를 보드에 배치 (row = y, col = x 매칭 주의)
+            PlaceStone(aiMove.y, aiMove.x);
+            Debug.Log("AI가 수를 두었습니다");
+        }
 
-        // AI의 수를 보드에 배치 (row = y, col = x 매칭 주의)
-        PlaceStone(aiMove.y, aiMove.x);
-        _aiTurn = false;
         boardRenderer.SetHoverEnabled(true); // AI 턴 종료 후 호버 복원
-        Debug.Log("AI가 수를 두었습니다");
+        _aiTurn = false;
+    }
+    
+    public void OnClickSettingsButton()
+    {
+        GameManager.Instance.OpenSettingsPanel();
     }
 }

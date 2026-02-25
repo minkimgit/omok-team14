@@ -1,6 +1,9 @@
 // OmokRule.cs
 // 목적:오목의 규칙 판정(최소: 5목 승리)만 담당한다.
 
+using System.Collections.Generic;
+using UnityEngine;
+
 public static class OmokRule
 {
     // ===== 상수/방향 =====
@@ -26,6 +29,38 @@ public static class OmokRule
     }
     //  - 마지막 수(lastX,lastY)에 놓인 stone 기준으로 4방향 검사
     //  - 한 방향에서 연속 개수 >= 5면 true
+
+    // 승리한 방향의 연속된 돌 좌표 목록 반환 (x=col, y=row)
+    public static List<Vector2Int> GetWinningLine(BoardData board, int lastX, int lastY, Cell stone)
+    {
+        foreach (var (dx, dy) in DIRS)
+        {
+            if (CountConnected(board, lastX, lastY, dx, dy, stone) < 5) continue;
+
+            var line = new List<Vector2Int>();
+
+            // 역방향으로 라인의 시작점까지 이동
+            int sx = lastX, sy = lastY;
+            while (board.InBounds(sx - dx, sy - dy) && board.Get(sx - dx, sy - dy) == stone)
+            {
+                sx -= dx;
+                sy -= dy;
+            }
+
+            // 시작점부터 순방향으로 돌 좌표 수집
+            int nx = sx, ny = sy;
+            while (board.InBounds(nx, ny) && board.Get(nx, ny) == stone)
+            {
+                line.Add(new Vector2Int(nx, ny));
+                nx += dx;
+                ny += dy;
+            }
+
+            return line;
+        }
+
+        return new List<Vector2Int>(); // 승리 라인 없음
+    }
 
     // ===== 내부 유틸 =====
     public static int CountConnected(BoardData board, int x, int y, int dx, int dy, Cell stone)
