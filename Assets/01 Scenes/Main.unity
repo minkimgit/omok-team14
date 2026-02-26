@@ -1283,6 +1283,7 @@ GameObject:
   m_Component:
   - component: {fileID: 649552434}
   - component: {fileID: 649552433}
+  - component: {fileID: 649552435}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1305,7 +1306,8 @@ MonoBehaviour:
   settingsPanelPrefab: {fileID: 6439241661893308241, guid: 2866a1de645a3bc48b13ec4324ff6995, type: 3}
   confirmPanelPrefab: {fileID: 1604826522456750275, guid: ad4e1c15ffb38ac40b8b92874876b1c3, type: 3}
   rankingPanelPrefab: {fileID: 0}
-  accountPanelPrefab: {fileID: 8046607045602306842, guid: 7a9940b4e47f4f045a3a7fa4610c8453, type: 3}
+  loginPanelPrefab: {fileID: 8046607045602306842, guid: 7a9940b4e47f4f045a3a7fa4610c8453, type: 3}
+  registerPanelPrefab: {fileID: 8046607045602306842, guid: 91d26e49896a71548b5237f6548af410, type: 3}
   logoutConfirmPanelPrefab: {fileID: 526477228793621858, guid: 8edca8c2891048949877a8514e4da9a3, type: 3}
 --- !u!4 &649552434
 Transform:
@@ -1322,6 +1324,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &649552435
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 649552432}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 436b74f36fb507145bb3bfa124ac5e79, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkManager
 --- !u!1 &672692097
 GameObject:
   m_ObjectHideFlags: 0
