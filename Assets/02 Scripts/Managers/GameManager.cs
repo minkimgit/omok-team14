@@ -11,10 +11,11 @@ public class GameManager : Singleton<GameManager>
     // 계정 관련
     [SerializeField] private GameObject loginPanelPrefab;
     [SerializeField] private GameObject registerPanelPrefab;
-    [SerializeField] private GameObject logoutConfirmPanelPrefab;
+    [SerializeField] private GameObject logoutPanelPrefab;
 
     // 캔버스
     private Canvas _canvas;
+    private GameObject _popups;
     
     // 게임 화면의 UI 컨트롤러
     private GameSceneController _gameSceneController; 
@@ -28,6 +29,7 @@ public class GameManager : Singleton<GameManager>
     protected override void OnSceneLoad(Scene scene, LoadSceneMode mode)
     {
         _canvas = FindFirstObjectByType<Canvas>();
+        _popups = GameObject.Find("Popups");
         _gameSceneController = FindFirstObjectByType<GameSceneController>();
     }
 
@@ -40,13 +42,14 @@ public class GameManager : Singleton<GameManager>
     // Settings 패널 열기
     public void OpenSettingsPanel()
     {
-        var settingsPanelObject = Instantiate(settingsPanelPrefab, _canvas.transform);
+        var settingsPanelObject = Instantiate(settingsPanelPrefab, _popups.transform);
         settingsPanelObject.GetComponent<SettingsPanelController>().Show();
     }
 
     public void OpenRankingPanel()
     {
-        var rankingPanelObject = Instantiate(rankingPanelPrefab, _canvas.transform);
+        var rankingPanelObject = Instantiate(rankingPanelPrefab, _popups.transform);
+        
         //todo: rankingPanelController 만들기
     }
 
@@ -58,15 +61,21 @@ public class GameManager : Singleton<GameManager>
     }
 
     // 회원가입/로그인 팝업 열기
-    public void OpenLoginPanel()
+    public void OpenLoginOrRegisterPanel()
     {
-        var loginPanelObject = Instantiate(loginPanelPrefab, _canvas.transform);
+        var loginPanelObject = Instantiate(loginPanelPrefab, _popups.transform);
         loginPanelObject.GetComponent<LoginPanelController>().Show();
+    }
+
+    public void OpenLogoutPanel()
+    {
+        var logoutPanelObject = Instantiate(logoutPanelPrefab, _popups.transform);
+        logoutPanelObject.GetComponent<LogoutPanelController>().Show();
     }
     
     public void OpenRegisterPanel()
     {
-        var registerPanelObject = Instantiate(registerPanelPrefab, _canvas.transform);
+        var registerPanelObject = Instantiate(registerPanelPrefab, _popups.transform);
         registerPanelObject.GetComponent<RegisterPanelController>().Show();
     }
 

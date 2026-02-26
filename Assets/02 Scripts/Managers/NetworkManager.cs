@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using SocketIOClient;
@@ -7,55 +8,81 @@ using Newtonsoft.Json.Linq;
 public class NetworkManager : Singleton<NetworkManager>
 {
     public SocketIOUnity Socket { get; private set; }
-    public event Action<bool, string> OnRegisterResponseReceived;
+    public event Action<bool, string, int> OnRegisterResponseReceived;
+    public event Action<bool, string, int> OnLoginResponseReceived;
+
+    private Coroutine connectionTimer; // 타임아웃 체크용 코루틴
 
     private void Start()
     {
-        // Start에서는 소켓 객체만 생성하고 연결(Connect)은 하지 않습니다.
         if (Instance == this)
         {
             SetupSocket();
+            
+            Debug.Log("[Network] 서버 연결 시도 중...");
+            ConnectToServer();
         }
     }
 
     private void SetupSocket()
     {
         var uri = new Uri("http://127.0.0.1:3000");
-        Socket = new SocketIOUnity(uri);
+        
+        Socket = new SocketIOUnity(uri, new SocketIOOptions
+        {
+            Reconnection = true,
+            ReconnectionAttempts = 3,
+            ReconnectionDelay = 2000,
+            ConnectionTimeout = TimeSpan.FromSeconds(3) // 소켓 자체 타임아웃 설정
+        });
 
-        Socket.OnConnected += (sender, e) => Debug.Log("[Network] 서버 연결 성공!");
-        Socket.OnDisconnected += (sender, e) => Debug.LogWarning("[Network] 서버 연결 종료");
-        Socket.OnError += (sender, e) => Debug.LogError($"[Network] 소켓 에러: {e}");
+        // 연결 성공 시 타이머 중단
+        Socket.OnConnected += (sender, e) => {
+            // 반드시 UnityThread.executeInUpdate를 사용하여 메인 스레드로 넘겨야 합니다.
+            UnityThread.executeInUpdate(() => {
+                if (connectionTimer != null) StopCoroutine(connectionTimer);
+                Debug.Log("<color=green>[Network] 서버 연결이 최종적으로 완료되었습니다!</color>");
+            });
+        };
+        
+        Socket.OnDisconnected += (sender, e) => Debug.Log("[Network] 서버 연결 종료 (오프라인 모드 활성)");
+        
+        Socket.OnError += (sender, e) => Debug.Log($"[Network] 소켓 연결 오류 발생.");
 
+        // --- 응답 처리 로직 (기존과 동일하지만 registerResponse 오타 수정됨) ---
         Socket.On("registerResponse", (response) =>
         {
-            try
-            {
-                // 원본 JSON 문자열을 직접 JObject로 파싱합니다.
-                // response.ToString()이 "[{...}]" 형태이므로 JArray로 먼저 받은 뒤 첫 번째 요소를 가져옵니다.
+            try {
                 var jArray = JArray.Parse(response.ToString());
                 var data = jArray[0] as JObject;
-
-                if (data != null)
-                {
+                if (data != null) {
                     bool success = data["success"]?.Value<bool>() ?? false;
-                    string message = data["message"]?.Value<string>() ?? "메시지 없음";
-
-                    Debug.Log($"[Network] 파싱 성공: {success}, {message}");
+                    string message = data["message"]?.Value<string>() ?? "";
+                    int code = data["code"]?.Value<int>() ?? -1;
 
                     UnityThread.executeInUpdate(() => {
-                        OnRegisterResponseReceived?.Invoke(success, message);
+                        // OnRegisterResponseReceived로 올바르게 호출되도록 수정
+                        OnRegisterResponseReceived?.Invoke(success, message, code);
                     });
                 }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[Network] 직접 파싱 에러: {ex.Message}");
-            }
+            } catch (Exception ex) { Debug.LogError($"[Network] 가입 파싱 에러: {ex.Message}"); }
+        });
+        
+        Socket.On("loginResponse", (response) =>
+        {
+            try {
+                var jArray = JArray.Parse(response.ToString());
+                var data = jArray[0] as JObject;
+                if (data != null) {
+                    bool success = data["success"]?.Value<bool>() ?? false;
+                    string message = data["message"]?.Value<string>() ?? "";
+                    int code = data["code"]?.Value<int>() ?? -1;
+                    UnityThread.executeInUpdate(() => OnLoginResponseReceived?.Invoke(success, message, code));
+                }
+            } catch (Exception ex) { Debug.LogError($"[Network] 로그인 파싱 에러: {ex.Message}"); }
         });
     }
 
-    // 외부에서 연결이 필요할 때 호출하는 함수
     public void ConnectToServer(Action onConnected = null)
     {
         if (Socket.Connected)
@@ -64,7 +91,7 @@ public class NetworkManager : Singleton<NetworkManager>
             return;
         }
 
-        // 연결 성공 시 콜백 실행을 위해 일회성 이벤트 등록 가능
+        // 연결 성공 시 콜백 등록
         if (onConnected != null)
         {
             EventHandler connectedHandler = null;
@@ -76,27 +103,53 @@ public class NetworkManager : Singleton<NetworkManager>
         }
 
         Socket.Connect();
+
+        // [추가] 3초 타임아웃 체크 시작
+        if (connectionTimer != null) StopCoroutine(connectionTimer);
+        connectionTimer = StartCoroutine(ConnectWithTimeout(3f));
+    }
+
+    // --- [핵심 추가] 타임아웃 코루틴 ---
+    private IEnumerator ConnectWithTimeout(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+
+        if (!Socket.Connected)
+        {
+            // 3초가 지났는데도 연결이 안 된 경우
+            Debug.Log($"<color=orange>[Network] {duration}초 동안 서버 응답이 없습니다. 연결 시도를 중단하고 오프라인 모드로 전환합니다.</color>");
+            
+            // 더 이상의 시도를 중단하려면 Disconnect() 호출
+            Socket.Disconnect(); 
+
+            // !! 여기에 나중에 팝업창을 띄우는 함수를 넣으시면 됩니다 !!
+        }
     }
 
     public void RequestRegister(string email, string pw)
     {
-        // 연결된 상태라면 바로 요청, 아니면 연결 후 요청
-        if (Socket.Connected)
-        {
-            EmitRegister(email, pw);
-        }
-        else
-        {
-            Debug.Log("[Network] 연결되지 않음. 연결 시도 후 요청합니다.");
-            ConnectToServer(() => EmitRegister(email, pw));
-        }
+        if (Socket.Connected) EmitRegister(email, pw);
+        else OnRegisterResponseReceived?.Invoke(false, "오프라인 상태입니다.", -1);
     }
 
     private void EmitRegister(string email, string pw)
     {
         var data = new { email = email, password = pw };
         Socket.Emit("register", data);
-        Debug.Log($"[Network] 가입 요청 발송: {email}");
+    }
+    
+    public void RequestLogin(string email, string pw)
+    {
+        if (Socket.Connected)
+        {
+            Socket.Emit("login", new { email, password = pw });
+        }
+        else
+        {
+            ConnectToServer(() => {
+                Socket.Emit("login", new { email, password = pw });
+            });
+        }
     }
 
     protected override void OnSceneLoad(Scene scene, LoadSceneMode mode) { }

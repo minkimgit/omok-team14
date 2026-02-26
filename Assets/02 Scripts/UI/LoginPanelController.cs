@@ -22,6 +22,24 @@ public class LoginPanelController : PanelController
         passwordInputField.onEndEdit.AddListener(delegate { OnEndEditPassword(); });
     }
     
+    // 씬에 패널이 나타날 때 이벤트를 구독합니다.
+    private void OnEnable()
+    {
+        if (NetworkManager.Instance != null)
+        {
+            NetworkManager.Instance.OnLoginResponseReceived += HandleLoginResponse;
+        }
+    }
+
+    // 패널이 사라지거나 파괴될 때 구독을 해제합니다.
+    private void OnDisable()
+    {
+        if (NetworkManager.Instance != null)
+        {
+            NetworkManager.Instance.OnLoginResponseReceived -= HandleLoginResponse;
+        }
+    }
+    
     private void OnEndEditPassword()
     {
         if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame)
@@ -40,9 +58,6 @@ public class LoginPanelController : PanelController
                     btnInteraction.OnPointerUp(null);
                 });
             }
-
-            // 4. 실제 로그인 로직 실행
-            OnClickLoginButton();
         }
     }
 
@@ -83,25 +98,68 @@ public class LoginPanelController : PanelController
         }
     }
 
-    private void OnClickCloseButton()
-    {
-        Hide();
-    }
-
     private void OnClickLoginButton()
     {
         string email = emailInputField.text;
         string pw = passwordInputField.text;
-        
-        Debug.Log($"[로그인 시도] Email: {email}, PW: {pw}");
-        
-        // !! 여기서 서버에 연결 시도 !!
-        
-        // TODO: 서버 로그인 로직 연결
+
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(pw))
+        {
+            Debug.Log("[유효성 검사] 이메일과 비밀번호를 모두 입력해주세요.");
+            return;
+        }
+
+        // 이미 연결되어 있다면 바로 요청, 아니면 연결 후 요청
+        if (NetworkManager.Instance.Socket != null && NetworkManager.Instance.Socket.Connected)
+        {
+            NetworkManager.Instance.RequestLogin(email, pw);
+        }
+        else
+        {
+            Debug.Log("[Network] 서버 재연결 시도 후 로그인 요청...");
+            NetworkManager.Instance.ConnectToServer(() => {
+                NetworkManager.Instance.RequestLogin(email, pw);
+            });
+        }
+    }
+
+    private void HandleLoginResponse(bool success, string message, int code)
+    {
+        // 0번은 성공이므로 즉시 처리
+        if (success && code == 0)
+        {
+            Debug.Log("<color=green>[로그인 성공]</color> 환영합니다!");
+            Hide();
+            return;
+        }
+
+        // 실패 시 code에만 집중하여 처리
+        string errorLog = "";
+    
+        switch (code)
+        {
+            case 1:
+                errorLog = "<color=red>[계정 에러]</color> 존재하지 않는 계정입니다.";
+                break;
+            case 2:
+                errorLog = "<color=yellow>[보안 에러]</color> 비밀번호가 일치하지 않습니다.";
+                break;
+            case 99:
+                errorLog = "<color=white>[서버 에러]</color> 서버 내부 오류가 발생했습니다.";
+                break;
+            default:
+                // 서버에서 정의되지 않은 코드가 올 경우를 대비한 방어 코드
+                errorLog = $"[알 수 없는 에러] 에러 코드: {code}";
+                break;
+        }
+
+        Debug.Log(errorLog);
     }
 
     private void OnClickRegisterButton()
     {
         GameManager.Instance.OpenRegisterPanel();
     }
+    
+    private void OnClickCloseButton() => Hide();
 }

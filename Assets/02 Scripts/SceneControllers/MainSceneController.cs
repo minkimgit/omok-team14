@@ -32,8 +32,13 @@ public class MainSceneController : MonoBehaviour
 #endif
     }
 
-    public void OnClickAccountButton()
+    public void OnClickLoginOrRegisterButton()
     {
-        GameManager.Instance.OpenLoginPanel();
+        GameManager.Instance.OpenLoginOrRegisterPanel();
+    }
+
+    public void OnClickLogoutButton()
+    {
+        GameManager.Instance.OpenLogoutPanel();
     }
 }

@@ -1,5 +1,7 @@
+using DG.Tweening;
 using UnityEngine;
 using TMPro;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class RegisterPanelController : PanelController
@@ -15,6 +17,8 @@ public class RegisterPanelController : PanelController
     {
         closeButton.onClick.AddListener(OnClickCloseButton);
         registerButton.onClick.AddListener(OnClickRegisterButton);
+        
+        confirmPasswordInputField.onEndEdit.AddListener(delegate { OnEndEditConfirmPassword(); });
     }
 
     // 패널이 활성화될 때 서버 응답 이벤트를 구독합니다.
@@ -32,6 +36,67 @@ public class RegisterPanelController : PanelController
         if (NetworkManager.Instance != null)
         {
             NetworkManager.Instance.OnRegisterResponseReceived -= HandleRegisterResponse;
+        }
+    }
+    
+    private void Update()
+    {
+        var keyboard = Keyboard.current;
+        if (keyboard == null) return;
+
+        // Tab 키로 포커스 순환 이동
+        if (keyboard.tabKey.wasPressedThisFrame)
+        {
+            NavigateFields();
+        }
+
+        // Enter 키 처리
+        if (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame)
+        {
+            OnEnterPressed();
+        }
+    }
+    
+    // Tab 키를 누를 때 필드 순서대로 포커스 이동
+    private void NavigateFields()
+    {
+        if (emailInputField.isFocused) passwordInputField.ActivateInputField();
+        else if (passwordInputField.isFocused) confirmPasswordInputField.ActivateInputField();
+        else emailInputField.ActivateInputField();
+    }
+
+    // Enter 키를 누를 때의 동작
+    private void OnEnterPressed()
+    {
+        if (emailInputField.isFocused)
+        {
+            passwordInputField.ActivateInputField();
+        }
+        else if (passwordInputField.isFocused)
+        {
+            confirmPasswordInputField.ActivateInputField();
+        }
+        else if (confirmPasswordInputField.isFocused)
+        {
+            OnClickRegisterButton(); // 마지막 필드에서 엔터 시 가입 실행
+        }
+    }
+
+    // 마지막 필드에서 엔터 입력 시 버튼 애니메이션 효과를 위한 함수
+    private void OnEndEditConfirmPassword()
+    {
+        if (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.numpadEnterKey.wasPressedThisFrame)
+        {
+            var btnInteraction = registerButton.GetComponent<ButtonInteraction>();
+            if (btnInteraction != null)
+            {
+                btnInteraction.OnPointerDown(null);
+                DOVirtual.DelayedCall(0.1f, () => {
+                    btnInteraction.OnPointerUp(null);
+                });
+            }
+            // OnEnterPressed에서 이미 호출되므로 중복 호출 방지를 위해 로직 확인 후 사용
+            // 여기서는 시각적 효과만 주고 실제 로직은 OnEnterPressed에 맡기거나 여기서 직접 호출합니다.
         }
     }
 
@@ -57,23 +122,41 @@ public class RegisterPanelController : PanelController
             Debug.Log("비밀번호가 서로 일치하지 않습니다.");
             return;
         }
-
-        // 3. 모든 조건을 통과했을 때만 NetworkManager를 통해 서버 연결 및 가입 요청
-        Debug.Log("서버 연결 및 회원가입 시도...");
+        
         NetworkManager.Instance.RequestRegister(email, pw);
     }
 
-    // 서버에 연결된 경우에 실행
-    private void HandleRegisterResponse(bool success, string message)
+    private void HandleRegisterResponse(bool success, string message, int code)
     {
-        Debug.Log($"[회원가입 결과] 성공: {success}, 메시지: {message}");
-        
-        if (success)
+        // 1. 성공 케이스 (Code 0)
+        if (success && code == 0)
         {
-            Debug.Log("계정이 생성되었습니다.");
-            // 성공 시 처리 (예: 패널 닫기)
+            Debug.Log("<color=green>[회원가입 성공]</color> 계정이 성공적으로 생성되었습니다. 이제 로그인할 수 있습니다!");
             Hide();
+            return;
         }
+
+        // 2. 실패 케이스 (Code 기반 분기)
+        string registerErrorLog = "";
+
+        switch (code)
+        {
+            case 1:
+                registerErrorLog = "<color=yellow>[가입 실패]</color> 이미 존재하는 이메일입니다. 다른 이메일을 사용해주세요.";
+                break;
+            case 2:
+                registerErrorLog = "<color=orange>[데이터 에러]</color> 입력 정보가 올바르지 않거나 누락되었습니다.";
+                break;
+            case 99:
+                registerErrorLog = "<color=red>[서버 에러]</color> 서버 DB 문제로 가입에 실패했습니다. 잠시 후 다시 시도해주세요.";
+                break;
+            default:
+                // 예외 상황 (예: 네트워크 연결 끊김 등)
+                registerErrorLog = $"<color=white>[알 수 없는 에러]</color> {message} (Code: {code})";
+                break;
+        }
+
+        Debug.Log(registerErrorLog);
     }
 
     private void OnClickCloseButton() => Hide();

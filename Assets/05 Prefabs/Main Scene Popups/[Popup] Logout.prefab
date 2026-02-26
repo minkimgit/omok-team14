@@ -12,9 +12,9 @@ GameObject:
   - component: {fileID: 7258223176433658381}
   - component: {fileID: 6132098152657316440}
   - component: {fileID: 7198472975656359675}
-  - component: {fileID: 2776768741244378070}
+  - component: {fileID: -2326008586455666293}
   m_Layer: 5
-  m_Name: '[Popup] Logout Confirm'
+  m_Name: '[Popup] Logout'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -90,7 +90,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 526477228793621858}
   m_CullTransparentMesh: 1
---- !u!114 &2776768741244378070
+--- !u!114 &-2326008586455666293
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -99,13 +99,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 526477228793621858}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 41076f41b0ce217418cae872766179f9, type: 3}
+  m_Script: {fileID: 11500000, guid: 2c0f0b505c9bfff4ba0119d1d321867d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ConfirmPanelController
+  m_EditorClassIdentifier: Assembly-CSharp::LogoutPanelController
   panelTransform: {fileID: 3977009676412356897}
-  messageText: {fileID: 5892258977392871380}
-  greenButtonText: {fileID: 2210340243545072298}
-  redButtonText: {fileID: 2178466318451142637}
+  confirmButton: {fileID: 569327183500757968}
+  cancelButton: {fileID: 7543809405052644701}
+  closeButton: {fileID: 0}
 --- !u!1 &1296946797577561509
 GameObject:
   m_ObjectHideFlags: 0
@@ -228,7 +228,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2776768741244378070}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: ConfirmPanelController, Assembly-CSharp
         m_MethodName: onClickGreenButton
         m_Mode: 1
@@ -422,7 +422,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2776768741244378070}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: ConfirmPanelController, Assembly-CSharp
         m_MethodName: onClickRedButton
         m_Mode: 1
