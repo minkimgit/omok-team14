@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using static Constants;
@@ -23,8 +24,14 @@ public class GameManager : Singleton<GameManager>
     // // Game Logic
     // private GameLogic _gameLogic;
 
+    // 상태 관리
     // 게임의 종류 (싱글, 듀얼)
     public GameType CurrentGameType { get; private set; }
+    // 로그인 상태
+    public bool IsLoggedIn { get; private set; } = false;
+    public string UserEmail { get; private set; } = ""; // 로그인된 유저의 이메일 (로그아웃 상태일 시 Empty)
+    
+    public event Action<bool> OnLoginStateChanged;
 
     protected override void OnSceneLoad(Scene scene, LoadSceneMode mode)
     {
@@ -90,5 +97,17 @@ public class GameManager : Singleton<GameManager>
     public void ChangeToMainScene()
     {
         SceneManager.LoadScene(SCENE_MAIN);
+    }
+    
+    // 로그인 상태 관리
+    public void SetLoginState(bool isLoggedIn, string email = "")
+    {
+        IsLoggedIn = isLoggedIn;
+        UserEmail = isLoggedIn ? email : "";
+        
+        Debug.Log($"로그인 상태 변경: {IsLoggedIn}");
+        
+        // 구독 중인 모든 UI(MainSceneController 등)에 알림
+        OnLoginStateChanged?.Invoke(IsLoggedIn);
     }
 }

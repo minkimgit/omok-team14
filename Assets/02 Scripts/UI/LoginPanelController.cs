@@ -129,6 +129,9 @@ public class LoginPanelController : PanelController
         if (success && code == 0)
         {
             Debug.Log("<color=green>[로그인 성공]</color> 환영합니다!");
+            
+            GameManager.Instance.SetLoginState(true, emailInputField.text);
+            
             Hide();
             return;
         }

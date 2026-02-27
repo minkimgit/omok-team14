@@ -1,8 +1,22 @@
+using TMPro;
 using UnityEngine;
 using static Constants;
 
 public class MainSceneController : MonoBehaviour
 {
+    [SerializeField] private GameObject loginOrRegisterButton;
+    [SerializeField] private GameObject logoutButton;
+    [SerializeField] private GameObject emailText;
+
+    void Start()
+    {
+        loginOrRegisterButton.SetActive(true);
+        logoutButton.SetActive(false);
+        emailText.SetActive(false);
+        
+        GameManager.Instance.OnLoginStateChanged += UpdateAccountUI;
+    }
+    
     public void OnClickSinglePlayButton()
     {
         GameManager.Instance.ChangeToGameScene(GameType.SinglePlay);
@@ -40,5 +54,23 @@ public class MainSceneController : MonoBehaviour
     public void OnClickLogoutButton()
     {
         GameManager.Instance.OpenLogoutPanel();
+    }
+
+    // 로그인/로그아웃 상태 변경에 따른 UI 업데이트 적용
+    private void UpdateAccountUI(bool isLoggedIn)
+    {
+        loginOrRegisterButton.SetActive(!isLoggedIn);
+        logoutButton.SetActive(isLoggedIn);
+
+        if (isLoggedIn)
+        {
+            emailText.GetComponent<TextMeshProUGUI>().text = $"계정 : {GameManager.Instance.UserEmail}";
+            emailText.SetActive(true);
+        }
+        else
+        {
+            emailText.GetComponent<TextMeshProUGUI>().text = "";
+            emailText.SetActive(false);
+        }
     }
 }
