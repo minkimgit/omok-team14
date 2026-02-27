@@ -28,16 +28,20 @@ public class GameManager : Singleton<GameManager>
     // 게임의 종류 (싱글, 듀얼)
     public GameType CurrentGameType { get; private set; }
     // 로그인 상태
-    public bool IsLoggedIn { get; private set; } = false;
+    public bool IsLoggedIn { get; private set; }
     public string UserEmail { get; private set; } = ""; // 로그인된 유저의 이메일 (로그아웃 상태일 시 Empty)
     
     public event Action<bool> OnLoginStateChanged;
 
     protected override void OnSceneLoad(Scene scene, LoadSceneMode mode)
     {
+        // 씬 로드 시 UI 요소를 다시 찾음
         _canvas = FindFirstObjectByType<Canvas>();
         _popups = GameObject.Find("Popups");
         _gameSceneController = FindFirstObjectByType<GameSceneController>();
+
+        // 디버깅용 로그
+        Debug.Log($"[GameManager] {scene.name} 로드 완료. Popups 찾기: {(_popups != null ? "성공" : "실패")}");
     }
 
     // Game O/X UI 업데이트
@@ -60,7 +64,7 @@ public class GameManager : Singleton<GameManager>
         //todo: rankingPanelController 만들기
     }
 
-    // // Confirm 패널 열기
+    // Confirm 패널 열기
     public void OpenConfirmPanel(string message, string confirmText, string cancelText, ConfirmPanelController.OnClickConfirm onClickConfirm, ConfirmPanelController.OnClickCancel onClickCancel = null)
     {
         var confirmPanelObject = Instantiate(confirmPanelPrefab, _canvas.transform);

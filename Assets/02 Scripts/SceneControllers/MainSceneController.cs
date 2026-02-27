@@ -10,11 +10,23 @@ public class MainSceneController : MonoBehaviour
 
     void Start()
     {
-        loginOrRegisterButton.SetActive(true);
-        logoutButton.SetActive(false);
-        emailText.SetActive(false);
-        
-        GameManager.Instance.OnLoginStateChanged += UpdateAccountUI;
+        UpdateAccountUI(GameManager.Instance.IsLoggedIn);
+    }
+    
+    private void OnEnable()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnLoginStateChanged += UpdateAccountUI;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnLoginStateChanged -= UpdateAccountUI;
+        }
     }
     
     public void OnClickSinglePlayButton()
