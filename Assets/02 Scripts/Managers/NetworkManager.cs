@@ -3,6 +3,8 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using SocketIOClient;
+using SocketIOClient.Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 public class NetworkManager : Singleton<NetworkManager>
@@ -80,6 +82,26 @@ public class NetworkManager : Singleton<NetworkManager>
                     UnityThread.executeInUpdate(() => OnLoginResponseReceived?.Invoke(success, message, code));
                 }
             } catch (Exception ex) { Debug.LogError($"[Network] 로그인 파싱 에러: {ex.Message}"); }
+        });
+        
+        // 매칭 성공 이벤트 수신
+        Socket.On("matchFound", (response) =>
+        {
+            try {
+                // 서버 응답 데이터 확인용
+                UnityThread.executeInUpdate(() => {
+                    Debug.Log("<color=yellow>[Network] 매칭 성공 응답 수신!</color>");
+                
+                    // 씬 전환 실행
+                    GameManager.Instance.OnMatchSuccess();
+                });
+            
+                // 필요하다면 여기서 상대방 정보나 방 ID를 파싱해서 
+                // GameManager에 저장해둘 수 있습니다. (예: GameManager.Instance.SetMatchInfo(data))
+            
+            } catch (Exception ex) { 
+                Debug.LogError($"[Network] 매칭 파싱 에러: {ex.Message}"); 
+            }
         });
     }
 
@@ -162,5 +184,21 @@ public class NetworkManager : Singleton<NetworkManager>
             Socket.Disconnect();
             Socket.Dispose();
         }
+    }
+    
+    public void JoinMatchmaking()
+    {
+        // 클래스 프로퍼티인 'Socket' (대문자) 사용
+        if (Socket == null || !Socket.Connected)
+        {
+            Debug.LogError("[Network] 서버와 연결되어 있지 않아 매칭을 요청할 수 없습니다.");
+            return;
+        }
+        
+        Debug.Log("<color=cyan>서버에 매칭 대기열 합류 요청을 보냈습니다. (매칭 중...)</color>");
+
+        // 서버에 'requestMatchmaking' 이벤트 전송
+        var data = new { email = GameManager.Instance.UserEmail };
+        Socket.Emit("requestMatchmaking", data);
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
 using static Constants;
 
 public class GameManager : Singleton<GameManager>
@@ -113,5 +114,19 @@ public class GameManager : Singleton<GameManager>
         
         // 구독 중인 모든 UI(MainSceneController 등)에 알림
         OnLoginStateChanged?.Invoke(IsLoggedIn);
+    }
+    
+    public void StartMultiplayFlow()
+    {
+        Debug.Log("<color=cyan>매칭 상대를 찾는 중...</color>");
+        
+        // 1. 서버에 매칭 요청 (NetworkManager 이용)
+        NetworkManager.Instance.JoinMatchmaking();
+    }
+    
+    public void OnMatchSuccess()
+    {
+        Debug.Log("<color=green>매칭 상대를 찾았습니다!</color>");
+        ChangeToGameScene(GameType.MultiPlay);
     }
 }

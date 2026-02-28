@@ -39,6 +39,20 @@ public class MainSceneController : MonoBehaviour
         GameManager.Instance.ChangeToGameScene(GameType.DualPlay);
     }
 
+    public void OnClickMultiPlayButton()
+    {
+        if (GameManager.Instance.IsLoggedIn)
+        {
+            // TODO : 매칭 수행 (매칭 중 팝업 띄우기)
+            
+            GameManager.Instance.StartMultiplayFlow();
+        }
+        else
+        {
+            Debug.Log("<color=red></color> 로그인을 해야합니다.");
+        }
+    }
+
     public void OnClickSettingsButton()
     {
         GameManager.Instance.OpenSettingsPanel();
