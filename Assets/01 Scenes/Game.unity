@@ -208,7 +208,7 @@ GameObject:
   - component: {fileID: 114622821}
   - component: {fileID: 114622825}
   m_Layer: 5
-  m_Name: Canvas
+  m_Name: Canvas (GameScene Controller)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -324,6 +324,12 @@ MonoBehaviour:
   boardRenderer: {fileID: 1164801739}
   playerATimeRemaining: 300
   playerBTimeRemaining: 300
+  player1NameText: {fileID: 1840902743}
+  player2NameText: {fileID: 1249864768}
+  p1BlackStoneObj: {fileID: 858801505}
+  p1WhiteStoneObj: {fileID: 1885842126}
+  p2BlackStoneObj: {fileID: 1695838844}
+  p2WhiteStoneObj: {fileID: 1335785211}
 --- !u!1 &228756619
 GameObject:
   m_ObjectHideFlags: 0
@@ -2784,6 +2790,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1885842126}
   m_CullTransparentMesh: 1
+--- !u!1 &2125890264
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2125890265}
+  - component: {fileID: 2125890266}
+  m_Layer: 0
+  m_Name: MultiPlayGameController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2125890265
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2125890264}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2125890266
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2125890264}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 303e91dd40488114fbead8f1b370ea2a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MultiplayGameController
+  gameSceneController: {fileID: 114622825}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -2793,3 +2844,4 @@ SceneRoots:
   - {fileID: 1601319661}
   - {fileID: 1145590111}
   - {fileID: 1140315786}
+  - {fileID: 2125890265}

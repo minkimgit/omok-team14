@@ -30,7 +30,6 @@ public class GameSceneController : MonoBehaviour
     private string _surrenderText = "게임을 기권하시겠습니까? 기권시 패배로 처리됩니다.";
     private string _victoryText = "승리하였습니다.";
     private string _defeatText = "패배하였습니다.";
-    
 
     private BoardData _boardData;    
     private AudioManager _audioManager;
@@ -40,6 +39,22 @@ public class GameSceneController : MonoBehaviour
     private float setPlayerATimeRemaining;
     private float setPlayerBTimeRemaining;
     private bool _aiTurn = false; // AI의 턴 여부
+    
+    public float GetPlayerATime() => playerATimeRemaining;
+    public float GetPlayerBTime() => playerBTimeRemaining;
+    
+    // 멀티 플레이 시에만 이용
+    [Header("Player Name UI")]
+    [SerializeField] private TextMeshProUGUI player1NameText;
+    [SerializeField] private TextMeshProUGUI player2NameText;
+
+    [Header("Player 1 Stone UI (Top)")]
+    [SerializeField] private GameObject p1BlackStoneObj;
+    [SerializeField] private GameObject p1WhiteStoneObj;
+
+    [Header("Player 2 Stone UI (Bottom)")]
+    [SerializeField] private GameObject p2BlackStoneObj;
+    [SerializeField] private GameObject p2WhiteStoneObj;
 
     private void Start()
     {
@@ -50,7 +65,12 @@ public class GameSceneController : MonoBehaviour
         _currentGameType = GameManager.Instance.CurrentGameType;
         
         boardRenderer.OnCellClicked += OnCellClicked;
-        SetFirstPlayer();
+        
+        // 멀티 플레이 시에는 선공 결정을 서버에 맡김
+        if (_currentGameType != GameType.MultiPlay)
+        {
+            SetFirstPlayer();
+        }
     }
 
     private void LateUpdate()
@@ -101,6 +121,16 @@ public class GameSceneController : MonoBehaviour
     private void OnCellClicked(int row, int col)
     {
         if (_aiTurn) return; // AI의 턴인 경우 클릭 무시
+        
+        // 멀티플레이 모드일 경우
+        if (_currentGameType == GameType.MultiPlay)
+        {
+            // MultiplayGameController에게 "클릭 이벤트"가 발생했음을 알림
+            // 여기서 직접 PlaceStone을 호출하지 않고, 내 턴인지 확인 후 서버로 보냄
+            MultiplayGameController.Instance.HandleBoardClick(row, col);
+            return;
+        }
+        
         if (!PlaceStone(row, col)) return;  // 유효하지 않은 위치에 돌을 놓으려는 경우 무시
 
         // 싱글 플레이고 현재 턴이 AI라면 AI 실행
@@ -111,7 +141,7 @@ public class GameSceneController : MonoBehaviour
         }
     }
 
-    private bool PlaceStone(int row, int col)
+    public bool PlaceStone(int row, int col)
     {
         Cell currentCell = PlayerToCell(_currentPlayer);
 
@@ -137,7 +167,13 @@ public class GameSceneController : MonoBehaviour
             OpenGameOverPanel();
             return true;
         }
-        ChangeTurn();
+        
+        // 멀티플레이가 아닐 때만 로컬에서 턴을 바꿈
+        if (GameManager.Instance.CurrentGameType != GameType.MultiPlay)
+        {
+            ChangeTurn();
+        }
+        
         return true;
     }
     
@@ -228,7 +264,6 @@ public class GameSceneController : MonoBehaviour
         int seconds = Mathf.FloorToInt(timeRemaining % 60);
         return $"{minutes}:{seconds:00}";
     }
-
     
     public void SetPlayerTurnPanel(PlayerType playerTurnType)
     {
@@ -281,5 +316,72 @@ public class GameSceneController : MonoBehaviour
         _aiTurn = false;
         boardRenderer.SetHoverEnabled(true); // AI 턴 종료 후 호버 복원
         Debug.Log("AI가 수를 두었습니다");
+    }
+    
+    // 멀티플레이 시 초기화 로직
+    public void InitializeMultiplay(int startingPlayer, int myPlayerNum, bool isMyTurn)
+    {
+        _startingPlayer = startingPlayer; // 1이면 Player1이 흑돌, 2이면 Player2가 흑돌
+        _currentPlayer = _startingPlayer; // 게임 시작은 무조건 흑돌부터
+        _timerIsRunning = true;
+
+        // 1. "나"와 "상대" 텍스트 설정
+        // 내 번호(myPlayerNum)가 1이면 위쪽이 "나", 아니면 아래쪽이 "나"
+        if (myPlayerNum == 1) {
+            player1NameText.text = "나";
+            player2NameText.text = "상대";
+        } else {
+            player1NameText.text = "상대";
+            player2NameText.text = "나";
+        }
+
+        // 2. 흑/백 돌 이미지 강제 설정
+        // startingPlayer(흑돌 번호)를 기준으로 양쪽 클라이언트 UI를 통일시킵니다.
+        if (_startingPlayer == 1) 
+        {
+            // Player 1 패널: 흑돌 활성, 백돌 비활성
+            p1BlackStoneObj.SetActive(true);
+            p1WhiteStoneObj.SetActive(false);
+            // Player 2 패널: 백돌 활성, 흑돌 비활성
+            p2BlackStoneObj.SetActive(false);
+            p2WhiteStoneObj.SetActive(true);
+        } 
+        else 
+        {
+            // Player 1 패널: 백돌 활성, 흑돌 비활성
+            p1BlackStoneObj.SetActive(false);
+            p1WhiteStoneObj.SetActive(true);
+            // Player 2 패널: 흑돌 활성, 백돌 비활성
+            p2BlackStoneObj.SetActive(true);
+            p2WhiteStoneObj.SetActive(false);
+        }
+
+        UpdateTurnUI();
+    }
+
+    // 3. 턴이 바뀔 때 UI를 갱신하는 공통 로직
+    public void UpdateTurnUI()
+    {
+        // GameManager에도 현재 턴을 알려줘야 타이머 로직이 정상 작동함
+        GameManager.Instance.SetGameTurn(
+            _currentPlayer == 1 ? PlayerType.Player1 : PlayerType.Player2
+        );
+
+        // 실제 UI 강조 효과 실행 (DOTween 애니메이션)
+        SetPlayerTurnPanel(_currentPlayer == 1 ? PlayerType.Player1 : PlayerType.Player2);
+    }
+    
+    // 멀티플레이용 턴 및 타이머 동기화 함수
+    public void SyncMultiplayState(int currentTurnPlayer, float p1Time, float p2Time)
+    {
+        // 1. 현재 턴 정보 업데이트
+        _currentPlayer = currentTurnPlayer;
+    
+        // 2. 타이머 동기화
+        playerATimeRemaining = p1Time;
+        playerBTimeRemaining = p2Time;
+
+        // 3. [핵심] 강조 UI 갱신 (초록색 변경 및 크기 조절)
+        UpdateTurnUI();
     }
 }
