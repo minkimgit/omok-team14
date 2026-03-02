@@ -284,7 +284,11 @@ public class GameSceneController : MonoBehaviour
                 {
                     // 각 클라이언트가 자신의 번호를 기준으로 승패 결정
                     if (MultiplayGameController.Instance.MyPlayerNumber == 1) OpenDefeatPanel();
-                    else OpenVictoryPanel();
+                    else
+                    {
+                        NetworkManager.Instance.EmitReportWin(); // P1 시간 초과 → P2(나)가 승리
+                        OpenVictoryPanel();
+                    }
                 }
                 else if (_currentGameType == GameType.DualPlay)
                     OpenVictoryPanel();
@@ -306,7 +310,11 @@ public class GameSceneController : MonoBehaviour
                 {
                     // 각 클라이언트가 자신의 번호를 기준으로 승패 결정
                     if (MultiplayGameController.Instance.MyPlayerNumber == 2) OpenDefeatPanel();
-                    else OpenVictoryPanel();
+                    else
+                    {
+                        NetworkManager.Instance.EmitReportWin(); // P2 시간 초과 → P1(나)가 승리
+                        OpenVictoryPanel();
+                    }
                 }
                 else
                     OpenVictoryPanel(); // DualPlay 또는 SinglePlay(AI 시간 초과 → 인간 승리)
@@ -389,8 +397,12 @@ public class GameSceneController : MonoBehaviour
         {
             // 내 번호와 승자 번호를 비교해 각 클라이언트가 알맞은 패널을 표시
             bool iWon = winnerPlayerNumber == MultiplayGameController.Instance.MyPlayerNumber;
-            if (iWon) OpenVictoryPanel();
-            else      OpenDefeatPanel();
+            if (iWon)
+            {
+                NetworkManager.Instance.EmitReportWin(); // 승자가 서버에 ELO 업데이트 요청
+                OpenVictoryPanel();
+            }
+            else OpenDefeatPanel();
         }
         else if (_currentGameType == GameType.SinglePlay && winnerPlayerNumber == 2)
             OpenDefeatPanel();

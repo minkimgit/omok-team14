@@ -7,13 +7,24 @@ using SocketIOClient.Newtonsoft.Json;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+// 랭킹 조회 결과 항목
+[System.Serializable]
+public class LeaderboardEntry
+{
+    public string email;
+    public int    elo;
+}
+
 public class NetworkManager : Singleton<NetworkManager>
 {
     public SocketIOUnity Socket { get; private set; }
-    
+
     // 인증 관련 이벤트
     public event Action<bool, string, int> OnRegisterResponseReceived;
     public event Action<bool, string, int> OnLoginResponseReceived;
+
+    // 랭킹 조회 완료 이벤트
+    public event Action<LeaderboardEntry[]> OnLeaderboardReceived;
 
     private Coroutine connectionTimer;
 
@@ -160,6 +171,28 @@ public class NetworkManager : Singleton<NetworkManager>
                 MultiplayGameController.Instance?.OnForceExit();
             });
         });
+
+        // 랭킹 데이터 수신
+        Socket.On("leaderboardData", (response) =>
+        {
+            try {
+                var dataArray = JArray.Parse(response.ToString())[0] as JArray;
+                if (dataArray != null) {
+                    var entries = new LeaderboardEntry[dataArray.Count];
+                    for (int i = 0; i < dataArray.Count; i++) {
+                        var item = dataArray[i] as JObject;
+                        entries[i] = new LeaderboardEntry {
+                            email = item["email"]?.Value<string>() ?? "",
+                            elo   = item["elo"]?.Value<int>()    ?? 1200
+                        };
+                    }
+                    UnityThread.executeInUpdate(() => {
+                        Debug.Log($"[Network] 랭킹 수신: {entries.Length}명");
+                        OnLeaderboardReceived?.Invoke(entries);
+                    });
+                }
+            } catch (Exception ex) { Debug.LogError($"[Network] leaderboardData 파싱 에러: {ex.Message}"); }
+        });
     }
     #endregion
 
@@ -220,6 +253,20 @@ public class NetworkManager : Singleton<NetworkManager>
     {
         if (Socket == null || !Socket.Connected) return;
         Socket.Emit("exitGame", new { });
+    }
+
+    // 승리 보고 — 서버가 양쪽 플레이어의 ELO를 업데이트
+    public void EmitReportWin()
+    {
+        if (Socket == null || !Socket.Connected) return;
+        Socket.Emit("reportWin", new { });
+    }
+
+    // 랭킹 요청 — 서버가 leaderboardData 이벤트로 응답
+    public void RequestLeaderboard()
+    {
+        if (Socket == null || !Socket.Connected) return;
+        Socket.Emit("getLeaderboard", new { });
     }
     #endregion
 

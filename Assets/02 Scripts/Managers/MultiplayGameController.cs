@@ -128,6 +128,13 @@ public class MultiplayGameController : Singleton<MultiplayGameController>
     // 서버로부터 forceExit 수신 — 상대방이 나갔거나 연결이 끊긴 경우
     public void OnForceExit()
     {
+        // 게임이 아직 진행 중일 때 상대방이 나가면 → 내가 승리 (기권/연결 종료)
+        // IsGameRunning(_timerIsRunning)이 false이면 이미 WinRoutine에서 결과가 보고됐으므로 생략
+        if (gameSceneController != null && gameSceneController.IsGameRunning)
+        {
+            NetworkManager.Instance.EmitReportWin();
+        }
+
         GameManager.Instance.CloseActiveConfirmPanel(() =>
         {
             GameManager.Instance.ChangeToMainScene();

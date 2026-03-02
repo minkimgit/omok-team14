@@ -60,7 +60,7 @@ public class MainSceneController : MonoBehaviour
 
     public void OnClickRankingButton()
     {
-        
+        GameManager.Instance.OpenRankingPanel();
     }
 
     public void OnClickQuitGameButton()

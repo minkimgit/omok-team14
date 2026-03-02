@@ -67,8 +67,7 @@ public class GameManager : Singleton<GameManager>
     public void OpenRankingPanel()
     {
         var rankingPanelObject = Instantiate(rankingPanelPrefab, _canvas.transform);
-        
-        //todo: rankingPanelController 만들기
+        rankingPanelObject.GetComponent<RankingPanelController>().Show();
     }
 
     // Confirm 패널 열기
