@@ -756,6 +756,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 2d389e06e0701a54c96056d428c6f69a, type: 3}
   - {fileID: 8300000, guid: 4bdd141ead4f97c4ebfd0c77585f134b, type: 3}
   - {fileID: 8300000, guid: b3e5b9bb671ad9a4e9ad3e2b58f2f66d, type: 3}
+  connectFiveSfx: {fileID: 8300000, guid: 29b56f80cda21401f89a9ee4b159ff92, type: 3}
   winSfx: {fileID: 8300000, guid: aa7a6fa778b5f5e489f13bb11da3fd37, type: 3}
   loseSfx: {fileID: 8300000, guid: f345c301ee61f95498aa89392730763b, type: 3}
   musicVolume: 0.5

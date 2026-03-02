@@ -1,6 +1,7 @@
 // BoardData.cs
 // 목적: 오목 보드의 "순수 데이터"만 관리한다.
 using System.Collections.Generic;
+using UnityEngine;
 
 public enum Cell
 {
@@ -14,6 +15,7 @@ public class BoardData
     /*===== 필드/프로퍼티 =====*/
     public int Size { get; private set; }
     private Cell[,] grid; // 보드 배열
+    public Vector2Int LastMove { get; private set; } = new Vector2Int(-1, -1);  // 가장 최근 돌이 놓인 위치
 
     //===== 생성/초기화 =====
     public BoardData(int size)
@@ -27,6 +29,7 @@ public class BoardData
         for (int i=0; i<Size; i++)
             for (int j=0; j<Size; j++)
                 grid[i,j] = Cell.Empty;
+        LastMove = new Vector2Int(-1, -1);  // 가장 최근 돌이 놓인 위치 초기화
     }
 
     //  - 좌표가 보드 범위 내인지 확인
@@ -74,6 +77,7 @@ public class BoardData
         if(CanPlace(x,y))
         {
             grid[x,y] = stone;
+            LastMove = new Vector2Int(x, y);    // 마지막 위치를 저장
             return true;
         }
         else
