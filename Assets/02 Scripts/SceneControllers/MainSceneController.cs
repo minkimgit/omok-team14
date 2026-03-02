@@ -43,9 +43,15 @@ public class MainSceneController : MonoBehaviour
     {
         if (GameManager.Instance.IsLoggedIn)
         {
-            // TODO : 매칭 수행 (매칭 중 팝업 띄우기)
-            
             GameManager.Instance.StartMultiplayFlow();
+            // 매칭 대기 중 팝업 — 상대를 찾으면 씬 전환 시 자동으로 닫힘
+            GameManager.Instance.OpenConfirmPanel(
+                "대결 상대 찾는중...",
+                "숨기기",       // 녹색 버튼 (기능 없음)
+                "취소",   // 빨간 버튼 — 매칭 취소 후 팝업 닫기
+                null,
+                () => NetworkManager.Instance.EmitCancelMatchmaking()
+            );
         }
         else
         {

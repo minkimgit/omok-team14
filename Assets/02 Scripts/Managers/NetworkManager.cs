@@ -241,6 +241,13 @@ public class NetworkManager : Singleton<NetworkManager>
         Socket.Emit("placeStone", new { row, col, playerATime, playerBTime });
     }
 
+    // 매칭 취소 — 대기열에서 본인을 제거
+    public void EmitCancelMatchmaking()
+    {
+        if (Socket == null || !Socket.Connected) return;
+        Socket.Emit("cancelMatchmaking", new { });
+    }
+
     // 게임 리셋 투표 — 양쪽이 모두 보내면 서버가 resetConfirmed를 브로드캐스트
     public void EmitRequestReset()
     {
