@@ -259,7 +259,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1455935064930791470}
+      - m_Target: {fileID: -4399847351565858928}
         m_TargetAssemblyTypeName: ConfirmPanelController, Assembly-CSharp
         m_MethodName: onClickRedButton
         m_Mode: 1
@@ -343,7 +343,7 @@ GameObject:
   - component: {fileID: 6753372365595138550}
   - component: {fileID: 4633656229695480432}
   - component: {fileID: 8468570524902292521}
-  - component: {fileID: 1455935064930791470}
+  - component: {fileID: -4399847351565858928}
   m_Layer: 5
   m_Name: Confirm Panel Prefab
   m_TagString: Untagged
@@ -369,7 +369,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0.000030517578, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &6753372365595138550
 MonoBehaviour:
@@ -421,7 +421,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1604826522456750275}
   m_CullTransparentMesh: 1
---- !u!114 &1455935064930791470
+--- !u!114 &-4399847351565858928
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -984,7 +984,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1455935064930791470}
+      - m_Target: {fileID: -4399847351565858928}
         m_TargetAssemblyTypeName: ConfirmPanelController, Assembly-CSharp
         m_MethodName: onClickGreenButton
         m_Mode: 1
