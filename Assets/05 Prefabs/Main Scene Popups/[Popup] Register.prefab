@@ -1525,7 +1525,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC774\uBA54\uC77C\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694."
+  m_text: "\uC544\uC774\uB514\uB97C \uC785\uB825\uD574\uC8FC\uC138\uC694."
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: be9d727518eede84bb88e3a87b7300e4, type: 2}
   m_sharedMaterial: {fileID: -151527588354143927, guid: be9d727518eede84bb88e3a87b7300e4, type: 2}
@@ -1810,8 +1810,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 52.69, y: -25}
-  m_SizeDelta: {x: 105.38, y: 50}
+  m_AnchoredPosition: {x: 53.465, y: -25}
+  m_SizeDelta: {x: 106.93, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5280257027665071839
 CanvasRenderer:
@@ -1841,7 +1841,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uC774\uBA54\uC77C"
+  m_text: "\uC544\uC774\uB514"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: c6a8619ffa8a8a84689d1c0e646a9b07, type: 2}
   m_sharedMaterial: {fileID: 4776677659490260175, guid: c6a8619ffa8a8a84689d1c0e646a9b07, type: 2}

@@ -47,6 +47,8 @@ public class GameSceneController : MonoBehaviour
     public float GetPlayerBTime() => playerBTimeRemaining;
     // MultiplayGameController가 PlaceStone 후 게임 종료 여부를 확인하는 데 사용
     public bool IsGameRunning => _timerIsRunning;
+    // 멀티플레이에서 내 턴 여부에 따라 호버 표시를 켜고 끔
+    public void SetBoardHoverEnabled(bool enabled) => boardRenderer?.SetHoverEnabled(enabled);
     
     // 멀티 플레이 시에만 이용
     [Header("Player Name UI")]
@@ -201,9 +203,12 @@ public class GameSceneController : MonoBehaviour
     // 기권 팝업
     public void OnClickSurrenderButton()
     {
-        GameManager.Instance.OpenConfirmPanel(_surrenderText, "네", "아니요",() =>
+        GameManager.Instance.OpenConfirmPanel(_surrenderText, "네", "아니요", () =>
         {
-            GameManager.Instance.ChangeToMainScene();
+            if (_currentGameType == GameType.MultiPlay)
+                MultiplayGameController.Instance.ExitGame(); // 상대방에게도 forceExit 전송
+            else
+                GameManager.Instance.ChangeToMainScene();
         });
     }
 
@@ -214,9 +219,11 @@ public class GameSceneController : MonoBehaviour
         _audioManager.PlayWinSfx();
         if (_currentGameType == GameType.MultiPlay)
         {
-            // 멀티플레이: "다시하기"는 서버 재매칭이 필요하므로 "나가기"만 표시
-            GameManager.Instance.OpenConfirmPanel(_victoryText, "나가기", "취소",
-                () => GameManager.Instance.ChangeToMainScene(), null);
+            // 녹색: 다시하기 투표 요청 (양쪽이 모두 눌러야 리셋)
+            // 빨간: 즉시 나가기 (상대방도 자동으로 메인 화면으로 이동)
+            GameManager.Instance.OpenConfirmPanel(_victoryText, "다시하기", "나가기",
+                () => MultiplayGameController.Instance.RequestReset(),
+                () => MultiplayGameController.Instance.ExitGame());
         }
         else
         {
@@ -230,9 +237,11 @@ public class GameSceneController : MonoBehaviour
         _audioManager.PlayLoseSfx();
         if (_currentGameType == GameType.MultiPlay)
         {
-            // 멀티플레이: "다시하기"는 서버 재매칭이 필요하므로 "나가기"만 표시
-            GameManager.Instance.OpenConfirmPanel(_defeatText, "나가기", "취소",
-                () => GameManager.Instance.ChangeToMainScene(), null);
+            // 녹색: 다시하기 투표 요청 (양쪽이 모두 눌러야 리셋)
+            // 빨간: 즉시 나가기 (상대방도 자동으로 메인 화면으로 이동)
+            GameManager.Instance.OpenConfirmPanel(_defeatText, "다시하기", "나가기",
+                () => MultiplayGameController.Instance.RequestReset(),
+                () => MultiplayGameController.Instance.ExitGame());
         }
         else
         {
@@ -240,13 +249,23 @@ public class GameSceneController : MonoBehaviour
                 () => ResetGame(), () => GameManager.Instance.ChangeToMainScene());
         }
     }
-    
-    //게임 리셋
+
+    //게임 리셋 (싱글/듀얼 플레이 전용)
     private void ResetGame()
     {
         boardRenderer.ClearBoard();
         _boardData.Clear();
         SetFirstPlayer();
+    }
+
+    // 멀티플레이 전용 리셋 — 서버가 결정한 새 선공으로 게임 재시작
+    public void ResetMultiplay(int newStartingPlayer, bool isMyTurn)
+    {
+        boardRenderer.ClearBoard();
+        _boardData.Clear();
+        playerATimeRemaining = setPlayerATimeRemaining;
+        playerBTimeRemaining = setPlayerBTimeRemaining;
+        InitializeMultiplay(newStartingPlayer, MultiplayGameController.Instance.MyPlayerNumber, isMyTurn);
     }
 
     private void TimerCountdown(int currentPlayer)
@@ -449,6 +468,9 @@ public class GameSceneController : MonoBehaviour
         }
 
         UpdateTurnUI();
+
+        // 내 턴이 아닐 때는 호버 비활성 (상대방 돌 위에 호버 표시 방지)
+        boardRenderer.SetHoverEnabled(isMyTurn);
     }
 
     // 3. 턴이 바뀔 때 UI를 갱신하는 공통 로직

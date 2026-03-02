@@ -18,6 +18,9 @@ public class GameManager : Singleton<GameManager>
     // 캔버스
     private Canvas _canvas;
     private GameObject _popups;
+
+    // 현재 열려 있는 컨펌 패널 (멀티플레이 리셋/퇴장 시 프로그래밍 방식으로 닫기 위해 추적)
+    private ConfirmPanelController _activeConfirmPanel;
     
     // 게임 화면의 UI 컨트롤러
     private GameSceneController _gameSceneController; 
@@ -40,6 +43,9 @@ public class GameManager : Singleton<GameManager>
         _canvas = FindFirstObjectByType<Canvas>();
         _popups = GameObject.Find("Popups");
         _gameSceneController = FindFirstObjectByType<GameSceneController>();
+
+        // 씬이 바뀌면 이전 씬의 패널 참조는 무효 → 초기화
+        _activeConfirmPanel = null;
 
         // 디버깅용 로그
         Debug.Log($"[GameManager] {scene.name} 로드 완료. Popups 찾기: {(_popups != null ? "성공" : "실패")}");
@@ -69,7 +75,24 @@ public class GameManager : Singleton<GameManager>
     public void OpenConfirmPanel(string message, string confirmText, string cancelText, ConfirmPanelController.OnClickConfirm onClickConfirm, ConfirmPanelController.OnClickCancel onClickCancel = null)
     {
         var confirmPanelObject = Instantiate(confirmPanelPrefab, _canvas.transform);
-        confirmPanelObject.GetComponent<ConfirmPanelController>().Show(message, confirmText, cancelText, onClickConfirm,  onClickCancel);
+        _activeConfirmPanel = confirmPanelObject.GetComponent<ConfirmPanelController>();
+        _activeConfirmPanel.Show(message, confirmText, cancelText, onClickConfirm, onClickCancel);
+    }
+
+    // 현재 열려 있는 컨펌 패널을 프로그래밍 방식으로 닫음 (멀티플레이 리셋/퇴장 시 사용)
+    public void CloseActiveConfirmPanel(System.Action onComplete = null)
+    {
+        if (_activeConfirmPanel != null && _activeConfirmPanel.gameObject != null)
+        {
+            var panel = _activeConfirmPanel;
+            _activeConfirmPanel = null;
+            panel.Hide(() => onComplete?.Invoke());
+        }
+        else
+        {
+            _activeConfirmPanel = null;
+            onComplete?.Invoke();
+        }
     }
 
     // 회원가입/로그인 팝업 열기

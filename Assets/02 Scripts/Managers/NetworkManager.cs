@@ -122,16 +122,43 @@ public class NetworkManager : Singleton<NetworkManager>
             try {
                 var data = JArray.Parse(response.ToString())[0] as JObject;
                 if (data != null) {
-                    int row = data["row"].Value<int>();
-                    int col = data["col"].Value<int>();
+                    int row    = data["row"].Value<int>();
+                    int col    = data["col"].Value<int>();
                     int player = data["player"].Value<int>();
+                    // 착수 시점의 타이머 스냅샷 (없으면 기본값 300초)
+                    float playerATime = data["playerATime"]?.Value<float>() ?? 300f;
+                    float playerBTime = data["playerBTime"]?.Value<float>() ?? 300f;
 
                     UnityThread.executeInUpdate(() => {
-                        MultiplayGameController.Instance.OnOpponentPlacedStone(row, col, player);
+                        MultiplayGameController.Instance.OnOpponentPlacedStone(row, col, player, playerATime, playerBTime);
                         Debug.Log($"[Network] 돌 수신: ({row}, {col}) - Player {player}");
                     });
                 }
             } catch (Exception ex) { Debug.LogError($"[Network] 돌 데이터 파싱 에러: {ex.Message}"); }
+        });
+
+        // 양쪽이 모두 리셋 투표 → 서버가 새 선공 번호와 함께 알림
+        Socket.On("resetConfirmed", (response) =>
+        {
+            try {
+                var data = JArray.Parse(response.ToString())[0] as JObject;
+                if (data != null) {
+                    int newStartingPlayer = data["startingPlayer"].Value<int>();
+                    UnityThread.executeInUpdate(() => {
+                        Debug.Log($"[Network] 게임 리셋 확정! 선공: Player {newStartingPlayer}");
+                        MultiplayGameController.Instance?.OnResetConfirmed(newStartingPlayer);
+                    });
+                }
+            } catch (Exception ex) { Debug.LogError($"[Network] resetConfirmed 파싱 에러: {ex.Message}"); }
+        });
+
+        // 상대방이 나갔거나 연결이 끊겼을 때 강제 퇴장
+        Socket.On("forceExit", (response) =>
+        {
+            UnityThread.executeInUpdate(() => {
+                Debug.Log("[Network] 상대방이 게임을 종료했습니다. 메인 화면으로 이동합니다.");
+                MultiplayGameController.Instance?.OnForceExit();
+            });
         });
     }
     #endregion
@@ -174,10 +201,25 @@ public class NetworkManager : Singleton<NetworkManager>
         Socket.Emit("requestMatchmaking", new { email = GameManager.Instance.UserEmail });
     }
     
-    public void EmitPlaceStone(int row, int col)
+    // playerATime / playerBTime: 착수 순간의 타이머 스냅샷 — 상대방 동기화용
+    public void EmitPlaceStone(int row, int col, float playerATime, float playerBTime)
     {
         if (Socket == null || !Socket.Connected) return;
-        Socket.Emit("placeStone", new { row, col });
+        Socket.Emit("placeStone", new { row, col, playerATime, playerBTime });
+    }
+
+    // 게임 리셋 투표 — 양쪽이 모두 보내면 서버가 resetConfirmed를 브로드캐스트
+    public void EmitRequestReset()
+    {
+        if (Socket == null || !Socket.Connected) return;
+        Socket.Emit("requestReset", new { });
+    }
+
+    // 게임 나가기 — 서버가 상대방에게 forceExit를 전송
+    public void EmitExitGame()
+    {
+        if (Socket == null || !Socket.Connected) return;
+        Socket.Emit("exitGame", new { });
     }
     #endregion
 

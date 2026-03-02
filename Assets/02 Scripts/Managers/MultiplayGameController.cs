@@ -34,47 +34,104 @@ public class MultiplayGameController : Singleton<MultiplayGameController>
     {
         if (!IsMyTurn) return;  // 내 턴이 아닌 경우 착수 금지
 
-        // 연속 클릭 방지: 서버 에코가 오기 전에 즉시 차단
+        // 연속 클릭 방지 + 호버 즉시 숨김
         IsMyTurn = false;
+        gameSceneController.SetBoardHoverEnabled(false);
 
         // 내 돌을 즉시 로컬에 그림 (네트워크 왕복을 기다리지 않음)
         bool placed = gameSceneController.PlaceStone(row, col);
         if (!placed)
         {
-            // 금수/이미 놓인 자리 등 유효하지 않은 위치 → 턴을 되돌림
+            // 금수/이미 놓인 자리 등 유효하지 않은 위치 → 턴 복원
             IsMyTurn = true;
+            gameSceneController.SetBoardHoverEnabled(true);
             return;
         }
 
-        // 서버에 알림 (상대방 화면에 돌을 그리기 위해)
-        NetworkManager.Instance.EmitPlaceStone(row, col);
+        // 착수 직후: 에코를 기다리지 않고 즉시 턴 패널과 타이머를 전환
+        // (서버 에코가 도착해도 같은 값을 다시 설정하므로 안전함)
+        if (gameSceneController.IsGameRunning)
+        {
+            int nextPlayer = MyPlayerNumber == 1 ? 2 : 1;
+            // 타이머 스냅샷을 SyncMultiplayState에 전달 (타이머 값은 그대로, _currentPlayer와 UI만 전환)
+            gameSceneController.SyncMultiplayState(nextPlayer,
+                gameSceneController.GetPlayerATime(),
+                gameSceneController.GetPlayerBTime());
+        }
+
+        // 서버에 착수 정보 + 타이머 스냅샷 전송 (상대방 화면 동기화용)
+        NetworkManager.Instance.EmitPlaceStone(row, col,
+            gameSceneController.GetPlayerATime(),
+            gameSceneController.GetPlayerBTime());
     }
 
     // 서버에서 stonePlaced 이벤트가 오면 호출됨 (내 돌 에코 + 상대 돌 모두 처리)
-    public void OnOpponentPlacedStone(int row, int col, int playerNum)
+    // playerATime / playerBTime: 착수 순간의 타이머 스냅샷 (타이머 동기화용)
+    public void OnOpponentPlacedStone(int row, int col, int playerNum, float playerATime, float playerBTime)
     {
-        if (playerNum != MyPlayerNumber)
+        if (playerNum == MyPlayerNumber)
         {
-            // 상대방의 돌: 서버가 알려준 playerNum을 직접 전달해 올바른 색상으로 그림
-            gameSceneController.PlaceStone(row, col, playerNum);
+            // 내 돌 에코: 돌은 HandleBoardClick에서 이미 그렸고 턴도 즉시 전환했으므로 생략
+            return;
         }
-        // 내 돌 에코(playerNum == MyPlayerNumber)는 HandleBoardClick에서 이미 그렸으므로 생략
 
-        // 승리가 발생했으면 WinRoutine이 이미 시작됐으므로 턴 업데이트 생략
+        // ── 상대방의 돌 ──
+        // 서버가 알려준 playerNum을 직접 전달해 올바른 색상으로 그림
+        gameSceneController.PlaceStone(row, col, playerNum);
+
+        // 상대방의 착수로 승리가 발생했으면 WinRoutine이 이미 시작됐으므로 턴 업데이트 생략
         if (!gameSceneController.IsGameRunning) return;
 
-        // 방금 둔 사람의 다음 플레이어로 턴 계산
-        int nextPlayer = (playerNum == 1) ? 2 : 1;
+        // 이제 내 턴
+        IsMyTurn = true;
+        gameSceneController.SetBoardHoverEnabled(true);
 
-        // 내 턴 여부 업데이트
-        IsMyTurn = (nextPlayer == MyPlayerNumber);
+        // 상대방의 타이머 스냅샷으로 동기화 + 턴 패널 전환
+        int nextPlayer = (playerNum == 1) ? 2 : 1;  // nextPlayer == MyPlayerNumber
+        gameSceneController.SyncMultiplayState(nextPlayer, playerATime, playerBTime);
+    }
 
-        // [중요] GameSceneController의 내부 턴 상태와 UI를 강제 동기화
-        gameSceneController.SyncMultiplayState(
-            nextPlayer,
-            gameSceneController.GetPlayerATime(),
-            gameSceneController.GetPlayerBTime()
+    // ── 게임오버 후 리셋/나가기 ──
+
+    // [다시하기] 버튼 — 리셋 투표 전송 후 상대방 응답 대기 패널 표시
+    public void RequestReset()
+    {
+        NetworkManager.Instance.EmitRequestReset();
+        // 대기 패널: 녹색/빨간 모두 누르면 대기를 취소하고 게임을 나감
+        GameManager.Instance.OpenConfirmPanel(
+            "상대방의 응답을 기다리는 중...",
+            "대기 취소",             // 녹색 버튼
+            "나가기",                // 빨간 버튼
+            () => ExitGame(),
+            () => ExitGame()
         );
+    }
+
+    // [나가기] 버튼 — 서버에 알린 뒤 즉시 메인 씬으로 이동
+    // 서버는 상대방에게 forceExit를 전송하므로 상대방도 자동으로 나가게 됨
+    public void ExitGame()
+    {
+        NetworkManager.Instance.EmitExitGame();
+        GameManager.Instance.ChangeToMainScene();
+    }
+
+    // 서버로부터 resetConfirmed 수신 — 양쪽이 모두 리셋에 동의한 경우
+    public void OnResetConfirmed(int newStartingPlayer)
+    {
+        IsMyTurn = (MyPlayerNumber == newStartingPlayer);
+        GameManager.Instance.CloseActiveConfirmPanel(() =>
+        {
+            gameSceneController.ResetMultiplay(newStartingPlayer, IsMyTurn);
+        });
+    }
+
+    // 서버로부터 forceExit 수신 — 상대방이 나갔거나 연결이 끊긴 경우
+    public void OnForceExit()
+    {
+        GameManager.Instance.CloseActiveConfirmPanel(() =>
+        {
+            GameManager.Instance.ChangeToMainScene();
+        });
     }
 
     // 싱글톤 추상 함수 구현
