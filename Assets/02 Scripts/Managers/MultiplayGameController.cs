@@ -33,31 +33,46 @@ public class MultiplayGameController : Singleton<MultiplayGameController>
     public void HandleBoardClick(int row, int col)
     {
         if (!IsMyTurn) return;  // 내 턴이 아닌 경우 착수 금지
-        
+
+        // 연속 클릭 방지: 서버 에코가 오기 전에 즉시 차단
+        IsMyTurn = false;
+
+        // 내 돌을 즉시 로컬에 그림 (네트워크 왕복을 기다리지 않음)
+        bool placed = gameSceneController.PlaceStone(row, col);
+        if (!placed)
+        {
+            // 금수/이미 놓인 자리 등 유효하지 않은 위치 → 턴을 되돌림
+            IsMyTurn = true;
+            return;
+        }
+
+        // 서버에 알림 (상대방 화면에 돌을 그리기 위해)
         NetworkManager.Instance.EmitPlaceStone(row, col);
-        
-        // 💡 팁: 내 화면에 바로 그리지 않는 이유
-        // 서버를 거쳐서 돌아오는 'stonePlaced' 이벤트를 통해 그리는 것이 
-        // 양쪽 클라이언트의 데이터를 일치시키는 데 더 확실합니다.
     }
 
-    // 서버에서 stonePlaced 이벤트가 오면 호출됨
+    // 서버에서 stonePlaced 이벤트가 오면 호출됨 (내 돌 에코 + 상대 돌 모두 처리)
     public void OnOpponentPlacedStone(int row, int col, int playerNum)
     {
-        // 1. 돌 배치 (이 함수는 내부에서 보드에 돌을 그림)
-        gameSceneController.PlaceStone(row, col);
+        if (playerNum != MyPlayerNumber)
+        {
+            // 상대방의 돌: 서버가 알려준 playerNum을 직접 전달해 올바른 색상으로 그림
+            gameSceneController.PlaceStone(row, col, playerNum);
+        }
+        // 내 돌 에코(playerNum == MyPlayerNumber)는 HandleBoardClick에서 이미 그렸으므로 생략
 
-        // 2. 서버가 알려준 '방금 둔 사람'의 다음 사람으로 턴 계산
+        // 승리가 발생했으면 WinRoutine이 이미 시작됐으므로 턴 업데이트 생략
+        if (!gameSceneController.IsGameRunning) return;
+
+        // 방금 둔 사람의 다음 플레이어로 턴 계산
         int nextPlayer = (playerNum == 1) ? 2 : 1;
 
-        // 3. 내 턴 여부 업데이트
+        // 내 턴 여부 업데이트
         IsMyTurn = (nextPlayer == MyPlayerNumber);
 
-        // 4. [중요] GameSceneController의 내부 턴 상태와 UI를 강제 동기화
-        // 타이머와 강조 UI를 한꺼번에 업데이트합니다.
+        // [중요] GameSceneController의 내부 턴 상태와 UI를 강제 동기화
         gameSceneController.SyncMultiplayState(
-            nextPlayer, 
-            gameSceneController.GetPlayerATime(), 
+            nextPlayer,
+            gameSceneController.GetPlayerATime(),
             gameSceneController.GetPlayerBTime()
         );
     }

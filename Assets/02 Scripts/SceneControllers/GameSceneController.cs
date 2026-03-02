@@ -45,6 +45,8 @@ public class GameSceneController : MonoBehaviour
     
     public float GetPlayerATime() => playerATimeRemaining;
     public float GetPlayerBTime() => playerBTimeRemaining;
+    // MultiplayGameController가 PlaceStone 후 게임 종료 여부를 확인하는 데 사용
+    public bool IsGameRunning => _timerIsRunning;
     
     // 멀티 플레이 시에만 이용
     [Header("Player Name UI")]
@@ -144,38 +146,41 @@ public class GameSceneController : MonoBehaviour
         }
     }
 
-    public bool PlaceStone(int row, int col)
+    // forPlayerNum: 멀티플레이에서 서버가 알려준 플레이어 번호를 직접 지정.
+    //               0이면 기존처럼 _currentPlayer 사용 (싱글/듀얼플레이 호환).
+    public bool PlaceStone(int row, int col, int forPlayerNum = 0)
     {
-        Cell currentCell = PlayerToCell(_currentPlayer);
+        int effectivePlayer = forPlayerNum > 0 ? forPlayerNum : _currentPlayer;
+        Cell currentCell = PlayerToCell(effectivePlayer);
 
         if (currentCell == Cell.Human) // 흑돌인가
         {
             if (OmokRule.IsForbiddenMove(_boardData, col, row, currentCell))
             {
                 Debug.Log("금수(쌍삼/사사) 위치입니다!");
-                return false; 
+                return false;
             }
         }
 
-        if (!_boardData.TryPlace(col, row, PlayerToCell(_currentPlayer))) return false;
+        if (!_boardData.TryPlace(col, row, PlayerToCell(effectivePlayer))) return false;
 
-        boardRenderer.PlaceStoneAt(row, col, GetStoneType(_currentPlayer));
+        boardRenderer.PlaceStoneAt(row, col, GetStoneType(effectivePlayer));
         _audioManager.PlayStonePlaceSfx();
-        
+
         // 승패 확인
-        if (OmokRule.CheckWin(_boardData, col, row, PlayerToCell(_currentPlayer)))
+        if (OmokRule.CheckWin(_boardData, col, row, PlayerToCell(effectivePlayer)))
         {
-            List<Vector2Int> winLine = OmokRule.GetWinningLine(_boardData, col, row, PlayerToCell(_currentPlayer));
-            StartCoroutine(WinRoutine(winLine));
+            List<Vector2Int> winLine = OmokRule.GetWinningLine(_boardData, col, row, PlayerToCell(effectivePlayer));
+            StartCoroutine(WinRoutine(winLine, effectivePlayer));
             return true;
         }
-        
+
         // 멀티플레이가 아닐 때만 로컬에서 턴을 바꿈
         if (GameManager.Instance.CurrentGameType != GameType.MultiPlay)
         {
             ChangeTurn();
         }
-        
+
         return true;
     }
     
@@ -207,27 +212,33 @@ public class GameSceneController : MonoBehaviour
     {
         _timerIsRunning = false;
         _audioManager.PlayWinSfx();
-        GameManager.Instance.OpenConfirmPanel(($"플레이어 {_currentPlayer} 승리!"), "다시하기", "나가기", () =>
+        if (_currentGameType == GameType.MultiPlay)
         {
-            ResetGame();
-        },
-        () =>
+            // 멀티플레이: "다시하기"는 서버 재매칭이 필요하므로 "나가기"만 표시
+            GameManager.Instance.OpenConfirmPanel(_victoryText, "나가기", "취소",
+                () => GameManager.Instance.ChangeToMainScene(), null);
+        }
+        else
         {
-            GameManager.Instance.ChangeToMainScene();
-        });
+            GameManager.Instance.OpenConfirmPanel($"플레이어 {_currentPlayer} 승리!", "다시하기", "나가기",
+                () => ResetGame(), () => GameManager.Instance.ChangeToMainScene());
+        }
     }
     public void OpenDefeatPanel()
     {
         _timerIsRunning = false;
         _audioManager.PlayLoseSfx();
-        GameManager.Instance.OpenConfirmPanel(("패배하였습니다"), "다시하기", "나가기", () =>
+        if (_currentGameType == GameType.MultiPlay)
         {
-            ResetGame();
-        },
-        () =>
+            // 멀티플레이: "다시하기"는 서버 재매칭이 필요하므로 "나가기"만 표시
+            GameManager.Instance.OpenConfirmPanel(_defeatText, "나가기", "취소",
+                () => GameManager.Instance.ChangeToMainScene(), null);
+        }
+        else
         {
-            GameManager.Instance.ChangeToMainScene();
-        });
+            GameManager.Instance.OpenConfirmPanel("패배하였습니다", "다시하기", "나가기",
+                () => ResetGame(), () => GameManager.Instance.ChangeToMainScene());
+        }
     }
     
     //게임 리셋
@@ -248,12 +259,18 @@ public class GameSceneController : MonoBehaviour
             }
             else if (playerATimeRemaining <= 0 && _timerIsRunning)
             {
+                // Player 1의 시간 초과
                 ChangeTurn();
-
-                if (_currentGameType == GameType.DualPlay)
+                if (_currentGameType == GameType.MultiPlay)
+                {
+                    // 각 클라이언트가 자신의 번호를 기준으로 승패 결정
+                    if (MultiplayGameController.Instance.MyPlayerNumber == 1) OpenDefeatPanel();
+                    else OpenVictoryPanel();
+                }
+                else if (_currentGameType == GameType.DualPlay)
                     OpenVictoryPanel();
                 else
-                    OpenDefeatPanel();
+                    OpenDefeatPanel(); // SinglePlay: 인간(P1) 시간 초과 → 패배
             }
         }
         else
@@ -264,8 +281,16 @@ public class GameSceneController : MonoBehaviour
             }
             else if (playerBTimeRemaining <= 0 && _timerIsRunning)
             {
+                // Player 2의 시간 초과
                 ChangeTurn();
-                OpenVictoryPanel();
+                if (_currentGameType == GameType.MultiPlay)
+                {
+                    // 각 클라이언트가 자신의 번호를 기준으로 승패 결정
+                    if (MultiplayGameController.Instance.MyPlayerNumber == 2) OpenDefeatPanel();
+                    else OpenVictoryPanel();
+                }
+                else
+                    OpenVictoryPanel(); // DualPlay 또는 SinglePlay(AI 시간 초과 → 인간 승리)
             }
         }
     }
@@ -312,9 +337,13 @@ public class GameSceneController : MonoBehaviour
     }
 
     // 승리 돌 애니메이션 후 게임오버 패널 표시
-    private IEnumerator WinRoutine(List<Vector2Int> winLine)
+    // winnerPlayerNum: PlaceStone에서 전달받은 effectivePlayer — _currentPlayer보다 신뢰도 높음
+    private IEnumerator WinRoutine(List<Vector2Int> winLine, int winnerPlayerNum = 0)
     {
         _timerIsRunning = false;
+        // PlaceStone이 넘겨준 effectivePlayer를 우선 사용, 없으면 _currentPlayer 폴백
+        int winnerPlayerNumber = winnerPlayerNum > 0 ? winnerPlayerNum : _currentPlayer;
+
         _audioManager.PlayConnectFiveSfx();
 
         const float punchDelay = 0.08f;  // 돌 사이 딜레이
@@ -337,7 +366,14 @@ public class GameSceneController : MonoBehaviour
         // 마지막 돌 애니메이션이 끝날 때까지 대기 후 패널 표시
         yield return new WaitForSeconds(punchDuration + 0.2f);
 
-        if (_currentGameType == GameType.SinglePlay && _currentPlayer == 2)
+        if (_currentGameType == GameType.MultiPlay)
+        {
+            // 내 번호와 승자 번호를 비교해 각 클라이언트가 알맞은 패널을 표시
+            bool iWon = winnerPlayerNumber == MultiplayGameController.Instance.MyPlayerNumber;
+            if (iWon) OpenVictoryPanel();
+            else      OpenDefeatPanel();
+        }
+        else if (_currentGameType == GameType.SinglePlay && winnerPlayerNumber == 2)
             OpenDefeatPanel();
         else
             OpenVictoryPanel();

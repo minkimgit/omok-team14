@@ -54,13 +54,13 @@ public class GameManager : Singleton<GameManager>
     // Settings 패널 열기
     public void OpenSettingsPanel()
     {
-        var settingsPanelObject = Instantiate(settingsPanelPrefab, _popups.transform);
+        var settingsPanelObject = Instantiate(settingsPanelPrefab, _canvas.transform);
         settingsPanelObject.GetComponent<SettingsPanelController>().Show();
     }
 
     public void OpenRankingPanel()
     {
-        var rankingPanelObject = Instantiate(rankingPanelPrefab, _popups.transform);
+        var rankingPanelObject = Instantiate(rankingPanelPrefab, _canvas.transform);
         
         //todo: rankingPanelController 만들기
     }
