@@ -1,5 +1,8 @@
 using System;
 using System.Collections;
+using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using SocketIOClient;
@@ -40,13 +43,19 @@ public class NetworkManager : Singleton<NetworkManager>
 
     private void SetupSocket()
     {
-        var uri = new Uri("http://127.0.0.1:3000");
+        // Unity의 Mono 런타임은 기본적으로 HTTPS 인증서를 검증하지 못하는 경우가 있음
+        // Railway 서버와의 HTTPS 연결을 위해 인증서 검증을 우회 (개발용)
+        ServicePointManager.ServerCertificateValidationCallback =
+            (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors errors) => true;
+
+        var uri = new Uri("https://omok-server-production.up.railway.app");
         Socket = new SocketIOUnity(uri, new SocketIOOptions
         {
             Reconnection = true,
             ReconnectionAttempts = 3,
             ReconnectionDelay = 2000,
-            ConnectionTimeout = TimeSpan.FromSeconds(3)
+            ConnectionTimeout = TimeSpan.FromSeconds(10),
+            Transport = SocketIOClient.Transport.TransportProtocol.WebSocket
         });
 
         // 기능별 리스너 분리 호출
@@ -212,7 +221,7 @@ public class NetworkManager : Singleton<NetworkManager>
 
         Socket.Connect();
         if (connectionTimer != null) StopCoroutine(connectionTimer);
-        connectionTimer = StartCoroutine(ConnectWithTimeout(3f));
+        connectionTimer = StartCoroutine(ConnectWithTimeout(10f));
     }
 
     public void RequestRegister(string email, string pw)
